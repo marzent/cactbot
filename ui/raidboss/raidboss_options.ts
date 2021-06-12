@@ -89,6 +89,7 @@ const defaultRaidbossConfigOptions = {
   InfoSoundVolume: 1,
   LongSoundVolume: 1,
   PullSoundVolume: 1,
+  BrowserTTS: false,
   cactbotWormholeStrat: false,
   cactbote8sUptimeKnockbackStrat: false,
 };

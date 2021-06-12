@@ -92,6 +92,7 @@
     "ui/(raidboss|oopsyraidsy)/data/**": "node --loader ts-node/esm test/test_raidboss_data.js"
   },
   "dependencies": {
-    "argparse": "^1.0.10"
+    "argparse": "^1.0.10",
+    "google-tts-api": "^2.0.2"
   }
 }

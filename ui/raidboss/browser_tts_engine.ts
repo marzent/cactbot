@@ -1,6 +1,16 @@
+import * as googleTTS from 'google-tts-api';
 import { Lang } from '../../resources/languages';
 
-class TTSItem {
+const TTSEngineType = {
+  SpeechSynthesis: 0,
+  GoogleTTS: 1,
+};
+
+interface TTSItem {
+  play: () => void;
+}
+
+class SpeechTTSItem implements TTSItem {
   readonly text: string;
   readonly item: SpeechSynthesisUtterance;
 
@@ -18,16 +28,43 @@ class TTSItem {
   }
 }
 
+class GoogleTTSItem implements TTSItem {
+  readonly text: string;
+  readonly lang: string;
+  private item: HTMLAudioElement | null = null;
+
+  constructor(text: string, lang: string) {
+    this.text = text;
+    this.lang = lang;
+    const audio = document.createElement('audio');
+    const header = 'data:audio/mpeg;base64,';
+    void googleTTS.getAudioBase64(text, { lang: lang })
+      .then((result) => audio.src = header + result);
+    document.body.appendChild(audio);
+    this.item = audio;
+  }
+
+  play() {
+    if (this.item)
+      void this.item.play();
+  }
+}
+
 type TTSItemDictionary = {
   [key: string]: TTSItem;
 }
 
 export default class BrowserTTSEngine {
   readonly ttsItems: TTSItemDictionary = {};
+  readonly googleTTSLang;
+  private engineType = TTSEngineType.GoogleTTS;
   private speechLang?: string;
   private speechVoice?: SpeechSynthesisVoice;
 
   constructor(lang: Lang) {
+    this.googleTTSLang = lang === 'cn' ? 'zh' : lang;
+    // TODO: should there be options for different voices here so that
+    // everybody isn't forced into Microsoft Anna?
     const cactbotLangToSpeechLang = {
       en: 'en-US',
       de: 'de-DE',
@@ -47,6 +84,7 @@ export default class BrowserTTSEngine {
           this.speechLang = speechLang;
           this.speechVoice = voice;
           window.speechSynthesis.onvoiceschanged = null;
+          this.engineType = TTSEngineType.SpeechSynthesis;
         } else {
           console.error('BrowserTTS error: could not find voice');
         }
@@ -57,18 +95,34 @@ export default class BrowserTTSEngine {
   }
 
   play(text: string): void {
-    if (!this.speechVoice)
-      return;
-
     try {
-      let ttsItem = this.ttsItems[text];
-      if (!ttsItem) {
-        ttsItem = new TTSItem(text, this.speechLang, this.speechVoice);
-        this.ttsItems[text] = ttsItem;
-      }
-      ttsItem.play();
+      const ttsItem = this.ttsItems[text];
+      ttsItem ? ttsItem.play() : this.playTTS(text);
     } catch (e) {
       console.error('Exception performing TTS', e);
     }
+  }
+
+  playTTS(text: string): void {
+    switch (this.engineType) {
+    case TTSEngineType.SpeechSynthesis:
+      this.playSpeechTTS(text);
+      break;
+    case TTSEngineType.GoogleTTS:
+      this.playGoogleTTS(text);
+      break;
+    }
+  }
+
+  playSpeechTTS(text: string): void {
+    const ttsItem = new SpeechTTSItem(text, this.speechLang, this.speechVoice);
+    this.ttsItems[text] = ttsItem;
+    ttsItem.play();
+  }
+
+  playGoogleTTS(text: string): void {
+    const ttsItem = new GoogleTTSItem(text, this.googleTTSLang);
+    this.ttsItems[text] = ttsItem;
+    ttsItem.play();
   }
 }
