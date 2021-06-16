@@ -78,7 +78,7 @@ export type TimelineReplacement = {
   replaceText?: { [timelineText: string]: string };
 };
 
-type TimelineStyle = {
+export type TimelineStyle = {
   style: { [key: string]: string };
   regex: RegExp;
 }
@@ -132,9 +132,11 @@ type ParsedText = ParsedPopupText | ParsedTriggerText;
 type Text = ParsedText & { time: number };
 
 type AddTimerCallback = (fightNow: number, durationEvent: Event, channeling: boolean) => void;
-type PopupTextCallback = (text: string) => void;
+type PopupTextCallback = (text: string, currentTime: number) => void;
 type TriggerCallback =
-    (trigger: LooseTimelineTrigger, matches: RegExpExecArray | null) => void;
+    (trigger: LooseTimelineTrigger,
+    matches: RegExpExecArray | null,
+    currentTime: number) => void;
 
 // TODO: Duplicated in 'jobs'
 const computeBackgroundColorFrom = (element: HTMLElement, classList: string): string => {
@@ -707,19 +709,19 @@ export class Timeline {
         break;
       if (t.type === 'info') {
         if (this.showInfoTextCallback)
-          this.showInfoTextCallback(t.text);
+          this.showInfoTextCallback(t.text, this.timebase);
       } else if (t.type === 'alert') {
         if (this.showAlertTextCallback)
-          this.showAlertTextCallback(t.text);
+          this.showAlertTextCallback(t.text, this.timebase);
       } else if (t.type === 'alarm') {
         if (this.showAlarmTextCallback)
-          this.showAlarmTextCallback(t.text);
+          this.showAlarmTextCallback(t.text, this.timebase);
       } else if (t.type === 'tts') {
         if (this.speakTTSCallback)
-          this.speakTTSCallback(t.text);
+          this.speakTTSCallback(t.text, this.timebase);
       } else if (t.type === 'trigger') {
         if (this.triggerCallback)
-          this.triggerCallback(t.trigger, t.matches);
+          this.triggerCallback(t.trigger, t.matches, this.timebase);
       }
       ++this.nextText;
     }
@@ -1039,29 +1041,32 @@ export class TimelineUI {
     }
   }
 
-  private OnShowInfoText(text: string): void {
+  private OnShowInfoText(text: string, currentTime: number): void {
     if (this.popupText)
-      this.popupText.Info(text);
+      this.popupText.Info(text, currentTime);
   }
 
-  private OnShowAlertText(text: string): void {
+  private OnShowAlertText(text: string, currentTime: number): void {
     if (this.popupText)
-      this.popupText.Alert(text);
+      this.popupText.Alert(text, currentTime);
   }
 
-  private OnShowAlarmText(text: string): void {
+  private OnShowAlarmText(text: string, currentTime: number): void {
     if (this.popupText)
-      this.popupText.Alarm(text);
+      this.popupText.Alarm(text, currentTime);
   }
 
-  private OnSpeakTTS(text: string): void {
+  private OnSpeakTTS(text: string, currentTime: number): void {
     if (this.popupText)
-      this.popupText.TTS(text);
+      this.popupText.TTS(text, currentTime);
   }
 
-  private OnTrigger(trigger: LooseTimelineTrigger, matches: RegExpExecArray | null): void {
+  private OnTrigger(
+      trigger: LooseTimelineTrigger,
+      matches: RegExpExecArray | null,
+      currentTime: number): void {
     if (this.popupText)
-      this.popupText.Trigger(trigger, matches);
+      this.popupText.Trigger(trigger, matches, currentTime);
   }
 
   private OnSyncTime(fightNow: number, running: boolean): void {
@@ -1095,13 +1100,13 @@ export class TimelineUI {
 }
 
 export class TimelineController {
-  private timelines: { [filename: string]: string };
+  protected timelines: { [filename: string]: string };
 
   private suppressNextEngage: boolean;
   private wipeRegex: Regex<Network6dParams>;
-  private activeTimeline: Timeline | null = null;
+  protected activeTimeline: Timeline | null = null;
 
-  constructor(private options: RaidbossOptions, private ui: TimelineUI,
+  constructor(protected options: RaidbossOptions, protected ui: TimelineUI,
       raidbossDataFiles: { [filename: string]: string }) {
     this.options = options;
     this.ui = ui;
