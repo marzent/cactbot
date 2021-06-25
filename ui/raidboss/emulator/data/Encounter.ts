@@ -1,11 +1,12 @@
-import CombatantTracker from './CombatantTracker';
+import { Lang, isLang } from '../../../../resources/languages';
+import { UnreachableCode } from '../../../../resources/not_reached';
 import PetNamesByLang from '../../../../resources/pet_names';
-import EmulatorCommon from '../EmulatorCommon';
+import EmulatorCommon, { MatchEndInfo, MatchStartInfo } from '../EmulatorCommon';
+
+import CombatantTracker from './CombatantTracker';
+import LineEvent, { isLineEventSource, isLineEventTarget } from './network_log_converter/LineEvent';
 import LogRepository from './network_log_converter/LogRepository';
 import NetworkLogConverter from './NetworkLogConverter';
-import { Lang, isLang } from '../../../../resources/languages';
-import LineEvent, { isLineEventSource, isLineEventTarget } from './network_log_converter/LineEvent';
-import { UnreachableCode } from '../../../../resources/not_reached';
 
 const isPetName = (name: string, language?: Lang) => {
   if (language)
@@ -58,21 +59,20 @@ export default class Encounter {
       if (!line)
         throw new UnreachableCode();
 
-      let res = EmulatorCommon.matchStart(line.networkLine);
+      let res: MatchStartInfo | MatchEndInfo | undefined =
+          EmulatorCommon.matchStart(line.networkLine);
       if (res) {
         this.firstLineIndex = i;
-        if (res.groups?.StartType)
-          startStatuses.add(res.groups.StartType);
-        if (res.groups?.StartIn) {
-          const startIn = parseInt(res.groups.StartIn);
-          if (startIn >= 0)
-            this.engageAt = Math.min(line.timestamp + startIn, this.engageAt);
-        }
+        if (res.StartType)
+          startStatuses.add(res.StartType);
+        const startIn = parseInt(res.StartIn);
+        if (startIn >= 0)
+          this.engageAt = Math.min(line.timestamp + startIn, this.engageAt);
       } else {
         res = EmulatorCommon.matchEnd(line.networkLine);
         if (res) {
-          if (res.groups?.EndType)
-            this.endStatus = res.groups.EndType;
+          if (res.EndType)
+            this.endStatus = res.EndType;
         } else if (isLineEventSource(line) && isLineEventTarget(line)) {
           if (line.id.startsWith('1') ||
             (line.id.startsWith('4') && isPetName(line.name, this.language))) {
@@ -90,7 +90,7 @@ export default class Encounter {
           }
         }
       }
-      const matchedLang = res?.groups?.language;
+      const matchedLang = res?.language;
       if (isLang(matchedLang))
         this.language = matchedLang;
     });

@@ -1,11 +1,36 @@
-import { JobsOptions } from './types';
-
-import WidgetList from '../../resources/widget_list';
 import EffectId from '../../resources/effect_id';
-import { MatchesAbility, MatchesGainsEffect, MatchesLosesEffect } from '../../resources/matches';
+import arrowImage from '../../resources/ffxiv/status/arrow.png';
+import astralImage from '../../resources/ffxiv/status/astral.png';
+import balanceImage from '../../resources/ffxiv/status/balance.png';
+import battleLitanyImage from '../../resources/ffxiv/status/battle-litany.png';
+import battleVoiceImage from '../../resources/ffxiv/status/battlevoice.png';
+import boleImage from '../../resources/ffxiv/status/bole.png';
+import brotherhoodImage from '../../resources/ffxiv/status/brotherhood.png';
+import chainStratagemImage from '../../resources/ffxiv/status/chain-stratagem.png';
+import devilmentImage from '../../resources/ffxiv/status/devilment.png';
+import devotionImage from '../../resources/ffxiv/status/devotion.png';
+import divinationImage from '../../resources/ffxiv/status/divination.png';
+import dragonSightImage from '../../resources/ffxiv/status/dragon-sight.png';
+import emboldenImage from '../../resources/ffxiv/status/embolden.png';
+import ewerImage from '../../resources/ffxiv/status/ewer.png';
+import ladyOfCrownsImage from '../../resources/ffxiv/status/lady-of-crowns.png';
+import lordOfCrownsImage from '../../resources/ffxiv/status/lord-of-crowns.png';
+import offguardImage from '../../resources/ffxiv/status/offguard.png';
+import peculiarLightImage from '../../resources/ffxiv/status/peculiar-light.png';
+import physicalImage from '../../resources/ffxiv/status/physical.png';
+import potionImage from '../../resources/ffxiv/status/potion.png';
+import spearImage from '../../resources/ffxiv/status/spear.png';
+import spireImage from '../../resources/ffxiv/status/spire.png';
+import standardFinishImage from '../../resources/ffxiv/status/standard-finish.png';
+import technicalFinishImage from '../../resources/ffxiv/status/technical-finish.png';
+import trickAttackImage from '../../resources/ffxiv/status/trick-attack.png';
+import umbralImage from '../../resources/ffxiv/status/umbral.png';
 import PartyTracker from '../../resources/party';
+import WidgetList from '../../resources/widget_list';
+import { NetMatches } from '../../types/net_matches';
 
 import { kAbility } from './constants';
+import { JobsOptions } from './types';
 import { makeAuraTimerIcon } from './utils';
 
 export interface BuffInfo {
@@ -247,7 +272,7 @@ export class BuffTracker {
         gainEffect: [EffectId.Medicated],
         loseEffect: [EffectId.Medicated],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/potion.png',
+        icon: potionImage,
         borderColor: '#AA41B2',
         sortKey: 0,
         cooldown: 270,
@@ -256,7 +281,7 @@ export class BuffTracker {
         mobGainsEffect: EffectId.AstralAttenuation,
         mobLosesEffect: EffectId.AstralAttenuation,
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/astral.png',
+        icon: astralImage,
         borderColor: '#9bdec0',
         sortKey: 0,
       },
@@ -264,7 +289,7 @@ export class BuffTracker {
         mobGainsEffect: EffectId.UmbralAttenuation,
         mobLosesEffect: EffectId.UmbralAttenuation,
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/umbral.png',
+        icon: umbralImage,
         borderColor: '#4d8bc9',
         sortKey: 0,
       },
@@ -272,7 +297,7 @@ export class BuffTracker {
         mobGainsEffect: EffectId.PhysicalAttenuation,
         mobLosesEffect: EffectId.PhysicalAttenuation,
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/physical.png',
+        icon: physicalImage,
         borderColor: '#fff712',
         sortKey: 0,
       },
@@ -282,7 +307,7 @@ export class BuffTracker {
         mobLosesEffect: EffectId.OffGuard,
         useEffectDuration: true,
         durationSeconds: 15,
-        icon: '../../resources/ffxiv/status/offguard.png',
+        icon: offguardImage,
         borderColor: '#47bf41',
         sortKey: 1,
         cooldown: 60,
@@ -294,7 +319,7 @@ export class BuffTracker {
         mobLosesEffect: EffectId.PeculiarLight,
         useEffectDuration: true,
         durationSeconds: 15,
-        icon: '../../resources/ffxiv/status/peculiar-light.png',
+        icon: peculiarLightImage,
         borderColor: '#F28F7B',
         sortKey: 1,
         cooldown: 60,
@@ -306,7 +331,7 @@ export class BuffTracker {
         mobLosesEffect: EffectId.VulnerabilityUp,
         useEffectDuration: true,
         durationSeconds: 15,
-        icon: '../../resources/ffxiv/status/trick-attack.png',
+        icon: trickAttackImage,
         // Magenta.
         borderColor: '#FC4AE6',
         sortKey: 1,
@@ -319,7 +344,7 @@ export class BuffTracker {
         useEffectDuration: true,
         durationSeconds: 20,
         partyOnly: true,
-        icon: '../../resources/ffxiv/status/battle-litany.png',
+        icon: battleLitanyImage,
         // Cyan.
         borderColor: '#099',
         sortKey: 2,
@@ -336,7 +361,7 @@ export class BuffTracker {
         durationSeconds: 20,
         partyOnly: true,
         stack: 5,
-        icon: '../../resources/ffxiv/status/embolden.png',
+        icon: emboldenImage,
         // Lime.
         borderColor: '#57FC4A',
         sortKey: 3,
@@ -346,7 +371,7 @@ export class BuffTracker {
         gainEffect: [EffectId.TheArrow],
         loseEffect: [EffectId.TheArrow],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/arrow.png',
+        icon: arrowImage,
         // Light Blue.
         borderColor: '#37ccee',
         sortKey: 4,
@@ -355,7 +380,7 @@ export class BuffTracker {
         gainEffect: [EffectId.TheBalance],
         loseEffect: [EffectId.TheBalance],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/balance.png',
+        icon: balanceImage,
         // Orange.
         borderColor: '#ff9900',
         sortKey: 4,
@@ -364,7 +389,7 @@ export class BuffTracker {
         gainEffect: [EffectId.TheBole],
         loseEffect: [EffectId.TheBole],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/bole.png',
+        icon: boleImage,
         // Green.
         borderColor: '#22dd77',
         sortKey: 4,
@@ -373,7 +398,7 @@ export class BuffTracker {
         gainEffect: [EffectId.TheEwer],
         loseEffect: [EffectId.TheEwer],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/ewer.png',
+        icon: ewerImage,
         // Light Blue.
         borderColor: '#66ccdd',
         sortKey: 4,
@@ -382,7 +407,7 @@ export class BuffTracker {
         gainEffect: [EffectId.TheSpear],
         loseEffect: [EffectId.TheSpear],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/spear.png',
+        icon: spearImage,
         // Dark Blue.
         borderColor: '#4477dd',
         sortKey: 4,
@@ -391,7 +416,7 @@ export class BuffTracker {
         gainEffect: [EffectId.TheSpire],
         loseEffect: [EffectId.TheSpire],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/spire.png',
+        icon: spireImage,
         // Yellow.
         borderColor: '#ddd044',
         sortKey: 4,
@@ -400,7 +425,7 @@ export class BuffTracker {
         gainEffect: [EffectId.LadyOfCrowns],
         loseEffect: [EffectId.LadyOfCrowns],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/lady-of-crowns.png',
+        icon: ladyOfCrownsImage,
         // Purple.
         borderColor: '#9e5599',
         sortKey: 4,
@@ -409,7 +434,7 @@ export class BuffTracker {
         gainEffect: [EffectId.LordOfCrowns],
         loseEffect: [EffectId.LordOfCrowns],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/lord-of-crowns.png',
+        icon: lordOfCrownsImage,
         // Dark Red.
         borderColor: '#9a2222',
         sortKey: 4,
@@ -418,7 +443,7 @@ export class BuffTracker {
         gainEffect: [EffectId.Devilment],
         loseEffect: [EffectId.Devilment],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/devilment.png',
+        icon: devilmentImage,
         // Dark Green.
         borderColor: '#006400',
         sortKey: 5,
@@ -428,7 +453,7 @@ export class BuffTracker {
         gainEffect: [EffectId.StandardFinish],
         loseEffect: [EffectId.StandardFinish],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/standard-finish.png',
+        icon: standardFinishImage,
         // Green.
         borderColor: '#32CD32',
         sortKey: 6,
@@ -449,7 +474,7 @@ export class BuffTracker {
         useEffectDuration: true,
         durationSeconds: 20,
         partyOnly: true,
-        icon: '../../resources/ffxiv/status/technical-finish.png',
+        icon: technicalFinishImage,
         // Dark Peach.
         borderColor: '#E0757C',
         sortKey: 6,
@@ -462,7 +487,7 @@ export class BuffTracker {
         useEffectDuration: true,
         durationSeconds: 20,
         partyOnly: true,
-        icon: '../../resources/ffxiv/status/battlevoice.png',
+        icon: battleVoiceImage,
         // Red.
         borderColor: '#D6371E',
         sortKey: 7,
@@ -474,7 +499,7 @@ export class BuffTracker {
         mobLosesEffect: EffectId.ChainStratagem,
         useEffectDuration: true,
         durationSeconds: 15,
-        icon: '../../resources/ffxiv/status/chain-stratagem.png',
+        icon: chainStratagemImage,
         // Blue.
         borderColor: '#4674E5',
         sortKey: 8,
@@ -484,7 +509,7 @@ export class BuffTracker {
         gainEffect: [EffectId.LeftEye],
         loseEffect: [EffectId.LeftEye],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/dragon-sight.png',
+        icon: dragonSightImage,
         // Orange.
         borderColor: '#FA8737',
         sortKey: 9,
@@ -494,7 +519,7 @@ export class BuffTracker {
         gainEffect: [EffectId.RightEye],
         loseEffect: [EffectId.RightEye],
         useEffectDuration: true,
-        icon: '../../resources/ffxiv/status/dragon-sight.png',
+        icon: dragonSightImage,
         // Orange.
         borderColor: '#FA8737',
         sortKey: 10,
@@ -507,7 +532,7 @@ export class BuffTracker {
         useEffectDuration: true,
         durationSeconds: 15,
         partyOnly: true,
-        icon: '../../resources/ffxiv/status/brotherhood.png',
+        icon: brotherhoodImage,
         // Dark Orange.
         borderColor: '#994200',
         sortKey: 11,
@@ -524,7 +549,7 @@ export class BuffTracker {
         useEffectDuration: true,
         durationSeconds: 15,
         partyOnly: true,
-        icon: '../../resources/ffxiv/status/devotion.png',
+        icon: devotionImage,
         // Yellow.
         borderColor: '#ffbf00',
         sortKey: 12,
@@ -537,7 +562,7 @@ export class BuffTracker {
         useEffectDuration: true,
         durationSeconds: 15,
         partyOnly: true,
-        icon: '../../resources/ffxiv/status/divination.png',
+        icon: divinationImage,
         // Dark purple.
         borderColor: '#5C1F58',
         sortKey: 13,
@@ -613,7 +638,7 @@ export class BuffTracker {
     // }
   }
 
-  onUseAbility(id: string, matches: MatchesAbility): void {
+  onUseAbility(id: string, matches: NetMatches['Ability']): void {
     const buffs = this.cooldownAbilityMap[id];
     if (!buffs)
       return;
@@ -639,7 +664,7 @@ export class BuffTracker {
 
   onGainEffect(
       buffs: BuffInfo[] | undefined,
-      matches: MatchesGainsEffect,
+      matches: NetMatches['GainsEffect'],
   ): void {
     if (!buffs)
       return;
@@ -661,7 +686,7 @@ export class BuffTracker {
 
   onLoseEffect(
       buffs: BuffInfo[] | undefined,
-      _matches: MatchesLosesEffect,
+      _matches: NetMatches['LosesEffect'],
   ): void {
     if (!buffs)
       return;
@@ -669,19 +694,19 @@ export class BuffTracker {
       this.onLoseBigBuff(b.name);
   }
 
-  onYouGainEffect(name: string, matches: MatchesGainsEffect): void {
+  onYouGainEffect(name: string, matches: NetMatches['GainsEffect']): void {
     this.onGainEffect(this.gainEffectMap[name], matches);
   }
 
-  onYouLoseEffect(name: string, matches: MatchesLosesEffect): void {
+  onYouLoseEffect(name: string, matches: NetMatches['LosesEffect']): void {
     this.onLoseEffect(this.loseEffectMap[name], matches);
   }
 
-  onMobGainsEffect(name: string, matches: MatchesGainsEffect): void {
+  onMobGainsEffect(name: string, matches: NetMatches['GainsEffect']): void {
     this.onGainEffect(this.mobGainsEffectMap[name], matches);
   }
 
-  onMobLosesEffect(name: string, matches: MatchesLosesEffect): void {
+  onMobLosesEffect(name: string, matches: NetMatches['LosesEffect']): void {
     this.onLoseEffect(this.mobLosesEffectMap[name], matches);
   }
 

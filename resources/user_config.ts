@@ -1,3 +1,5 @@
+// TODO: Fix import/order
+/* eslint-disable import/order */
 import { Lang } from './languages';
 import { BaseOptions } from '../types/data';
 import { CactbotLoadUserRet, SavedConfig, SavedConfigEntry } from '../types/event';
@@ -46,7 +48,7 @@ type ConfigValue = string | number | boolean;
 type ConfigEntry = {
   id: string;
   name: LocaleText;
-  type: 'checkbox' | 'select' | 'float' | 'integer' | 'directory';
+  type: 'checkbox' | 'select' | 'float' | 'integer' | 'directory' | 'html';
   default: ConfigValue;
   debug?: boolean;
   debugOnly?: boolean;

@@ -1,7 +1,7 @@
+import { JobDetail } from '../../../types/event';
 import { Bars } from '../bar';
 import { kAbility } from '../constants';
 import { calcGCDFromStat, computeBackgroundColorFrom } from '../utils';
-import { JobDetail } from '../../../types/event';
 
 let resetFunc: ((bars: Bars) => void) = (_bars: Bars) => undefined;
 let tid1: ReturnType<typeof setTimeout>;
@@ -16,7 +16,6 @@ export const setup = (bars: Bars): void => {
     fgColor: 'gnb-color-nomercy',
   });
   bars.onUseAbility(kAbility.NoMercy, () => {
-    noMercyBox.duration = '0';
     noMercyBox.duration = '20';
     noMercyBox.threshold = '1000';
     noMercyBox.fg = computeBackgroundColorFrom(noMercyBox, 'gnb-color-nomercy.active');
@@ -32,7 +31,6 @@ export const setup = (bars: Bars): void => {
     fgColor: 'gnb-color-bloodfest',
   });
   bars.onUseAbility(kAbility.Bloodfest, () => {
-    bloodfestBox.duration = '0';
     bloodfestBox.duration = '90';
   });
 
@@ -57,7 +55,6 @@ export const setup = (bars: Bars): void => {
     fgColor: 'gnb-color-gnashingfang',
   });
   bars.onUseAbility(kAbility.GnashingFang, () => {
-    gnashingFangBox.duration = '0';
     gnashingFangBox.duration = calcGCDFromStat(bars, bars.skillSpeed, 30000).toString();
     cartridgeComboTimer.duration = '0';
     cartridgeComboTimer.duration = '15';

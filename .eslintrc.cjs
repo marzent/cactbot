@@ -26,7 +26,6 @@ const settings = {
     'plugin/',
     'publish/',
     'resources/lib/',
-    'ui/dps/rdmty/',
   ],
   'parserOptions': {
     'ecmaVersion': 2020,
@@ -234,6 +233,7 @@ const tsOverrides = {
     '@typescript-eslint/no-unused-vars': ['error', { 'argsIgnorePattern': '^_\\w+' }],
     '@typescript-eslint/object-curly-spacing': ['error', 'always'],
     'func-style': ['error', 'expression', { 'allowArrowFunctions': true }],
+    'import/order': ['error', { 'alphabetize': { 'caseInsensitive': true, 'order': 'asc' }, 'newlines-between': 'always' }],
     'object-shorthand': ['error', 'consistent'],
   },
 };
@@ -268,9 +268,17 @@ const overrides = [
     },
   },
   {
-    'files': ['**/oopsyraidsy/data/**/*.ts', '**/raidboss/data/**/*.ts'],
+    'files': ['**/raidboss/data/**/*'],
     'rules': {
-      'rulesdir/cactbot-matches-type-references': 'error',
+      'rulesdir/cactbot-trigger-property-order': ['error', { 'module': 'raidboss' }],
+      'rulesdir/cactbot-triggerset-property-order': ['error', { 'module': 'raidboss' }],
+    },
+  },
+  {
+    'files': ['**/oopsyraidsy/data/**/*'],
+    'rules': {
+      'rulesdir/cactbot-trigger-property-order': ['error', { 'module': 'oopsyraidsy' }],
+      'rulesdir/cactbot-triggerset-property-order': ['error', { 'module': 'oopsyraidsy' }],
     },
   },
 ];

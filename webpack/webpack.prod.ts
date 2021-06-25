@@ -1,11 +1,9 @@
-'use strict';
+import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import { mergeWithRules } from 'webpack-merge';
 
-const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const { mergeWithRules } = require('webpack-merge');
-
-const generateConfig = require('./webpack.config.cjs');
-const constants = require('./constants.cjs');
+import * as constants from './constants';
+import generateConfig from './webpack.config';
 
 const baseConfig = generateConfig(constants);
 
@@ -44,7 +42,7 @@ const cssMinifyConfigOverride = {
   },
 };
 
-module.exports = mergeWithRules({
+export default mergeWithRules({
   optimization: 'merge',
   module: {
     rules: {
