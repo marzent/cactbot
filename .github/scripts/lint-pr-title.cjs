@@ -10,6 +10,10 @@ const github = require('@actions/github');
 
 const botName = 'cactbotbot';
 
+const maxLength = 60;
+
+const boolToEmoji = (bool) => bool ? '✅' : '❌';
+
 const validScope = [
   // UI Module Scopes
   'config',
@@ -45,16 +49,35 @@ const thanksComment = (userName) => {
   let userStr = '';
   if (userName)
     userStr = `@${userName} `;
-  return `${userStr}Thanks for your contribution!🚀`;
+  return `${userStr}Thanks for your contribution! 🌵🚀`;
 };
 
-const getComment = (title, userName) => `${thanksComment(userName)}
+const getComment = (title, userName, formatValid, lengthValid) => `${thanksComment(userName)}
 
-Currently your title is: ${title},
-but it should be in the format of \`scope: description\`.
+Currently your title is: \`${title}\`, but it should:
+* ${boolToEmoji(formatValid)} be in the format of \`scope: description\`.
+* ${boolToEmoji(lengthValid)} have at most ${maxLength} characters.
+
+<details>
+<summary>More Information</summary>
 
 \`scope\` can be any of the following:
-${validScope.map((s) => `  - ${s}`).join('\n')}
+${[...validScope].sort().map((s) => `- \`${s}\``).join('\n')}
+
+Multiple scopes can be combined with slashes if needed, e.g. \`raidboss/oopsy\`.
+
+Valid Title Examples:
+- \`i18n: translating a bunch of new stuff\`
+- \`raidboss: fix bug in New Ultimate Fight\`
+- \`plugin: update Bozja CE code for patch 6.34\`
+- \`lint: change @typescript/irritating-lint warning\`
+- \`raidboss/oopsy: support shiny new dungeon\`
+
+Drafts can also use \`[wip]\` as a prefix to show that they are a "work in progress", e.g. \`[wip] plugin: refactoring everything\`.
+
+Breaking changes can use \`!\` as a prefix to mark a breaking change, e.g. \`!plugin: change all the apis\`.
+
+</details>
 
 ------
 This comment is created and updated by a bot.
@@ -75,7 +98,9 @@ const checkTitle = async (octokit, owner, repo, pullNumber) => {
   });
   const { title, user } = pullRequest;
   const userName = user?.login;
-  const m = /^((?<prefix>[\w!\[\]]*)\s*)?\b(?<scope>\w+):\s?.+$/.exec(title);
+  const m = /^(?<prefix>(?:[\w\[\]]*\s+)!?)?(?<scope>[\w\/]+):\s?.+$/.exec(title);
+  const lengthValid = title.length <= maxLength;
+  let formatValid = false;
 
   const { data: comments } = await octokit.rest.issues.listComments({
     owner,
@@ -83,44 +108,56 @@ const checkTitle = async (octokit, owner, repo, pullNumber) => {
     'issue_number': pullNumber,
   });
 
-  const myComment = comments.find(({ user }) => user?.login === botName);
-
   if (m && m.groups) {
     const groups = m.groups;
     console.log(`Matches: scope: ${groups.scope}, prefix: ${groups.prefix}`);
 
-    const scopeValid = validScope.includes(groups.scope);
-    const prefixValid = validPrefix.includes(groups.prefix) || !groups.prefix;
-    if (scopeValid && prefixValid) {
-      if (myComment) {
-        console.error('PR title good, updating comment.');
-        await octokit.rest.issues.updateComment({
-          owner,
-          repo,
-          'comment_id': myComment.id,
-          'body': thanksComment(userName),
-        });
-      } else {
-        console.error('PR title good, no comment to update.');
-      }
-      return true;
-    }
+    const scopes = groups.scope.split('/');
+    const scopeValid = scopes.every((scope) => validScope.includes(scope));
+    const prefixValid = !groups.prefix || validPrefix.includes(groups.prefix.trim());
+    formatValid = scopeValid && prefixValid;
   } else {
     console.error('PR title did not match.');
   }
 
-  if (myComment) {
-    console.error('PR title still incorrect, leaving existing comment.');
-    return false;
+  const myComment = comments.find(({ user }) => user?.login === botName);
+
+  if (formatValid && lengthValid) {
+    if (myComment) {
+      console.error('PR title good, updating comment.');
+      await octokit.rest.issues.updateComment({
+        owner,
+        repo,
+        'comment_id': myComment.id,
+        'body': thanksComment(userName),
+      });
+    } else {
+      console.error('PR title good, no comment to update.');
+    }
+    return true;
   }
 
-  console.error('PR title incorrect, creating comment.');
-  await octokit.rest.issues.createComment({
-    owner,
-    repo,
-    'issue_number': pullNumber,
-    'body': getComment(title),
-  });
+  const bodyText = getComment(title, userName, formatValid, lengthValid);
+  console.error(`Comment text:\n--snip--\n${bodyText}\n--snip--\n`);
+
+  if (myComment) {
+    console.error('PR title still incorrect, updating existing comment.');
+    console.error('PR title good, updating comment.');
+    await octokit.rest.issues.updateComment({
+      owner,
+      repo,
+      'comment_id': myComment.id,
+      'body': bodyText,
+    });
+  } else {
+    console.error('PR title incorrect, creating comment.');
+    await octokit.rest.issues.createComment({
+      owner,
+      repo,
+      'issue_number': pullNumber,
+      'body': bodyText,
+    });
+  }
 
   return false;
 };
@@ -132,7 +169,8 @@ const run = async () => {
 
   const octokit = github.getOctokit(process.env.GH_TOKEN);
 
-  await checkTitle(octokit, owner, repo, pullNumber);
+  const result = await checkTitle(octokit, owner, repo, pullNumber);
+  process.exit(result ? 0 : 2);
 };
 
 run().catch((err) => {
