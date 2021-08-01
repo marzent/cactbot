@@ -8,12 +8,25 @@ import EventBus from '../EventBus';
 import Tooltip from './Tooltip';
 
 const jobOrder = [
-  'PLD', 'WAR', 'DRK', 'GNB',
-  'WHM', 'SCH', 'AST',
-  'MNK', 'DRG', 'NIN', 'SAM',
-  'BRD', 'MCH', 'DNC',
-  'BLM', 'SMN', 'RDM',
-  'BLU'] as const;
+  'PLD',
+  'WAR',
+  'DRK',
+  'GNB',
+  'WHM',
+  'SCH',
+  'AST',
+  'MNK',
+  'DRG',
+  'NIN',
+  'SAM',
+  'BRD',
+  'MCH',
+  'DNC',
+  'BLM',
+  'SMN',
+  'RDM',
+  'BLU',
+] as const;
 
 type JobOrderType = typeof jobOrder[number];
 
@@ -145,7 +158,6 @@ export default class EmulatedPartyInfo extends EventBus {
     });
   }
 
-
   updatePartyInfo(emulator: RaidEmulator, timestamp: number): void {
     const enc = emulator.currentEncounter;
     if (!enc)
@@ -200,7 +212,7 @@ export default class EmulatedPartyInfo extends EventBus {
       bar.classList.remove('dps');
       if (combatant.job) {
         bar.classList.add(
-            Util.jobToRole(combatant.job),
+          Util.jobToRole(combatant.job),
         );
       }
 
@@ -209,7 +221,8 @@ export default class EmulatedPartyInfo extends EventBus {
           continue;
 
         const $e = cloneSafe(this.$triggerItemTemplate);
-        $e.style.left = ((trigger.resolvedOffset / encounter.encounter.duration) * 100).toString() + '%';
+        $e.style.left = ((trigger.resolvedOffset / encounter.encounter.duration) * 100).toString() +
+          '%';
         const triggerId = trigger.triggerHelper.trigger.id ?? 'Unknown Trigger';
         this.tooltips.push(new Tooltip($e, 'bottom', triggerId));
         bar.append($e);
@@ -238,7 +251,9 @@ export default class EmulatedPartyInfo extends EventBus {
       throw new UnreachableCode();
 
     this.currentPerspective = id;
-    this.$triggerInfo.querySelectorAll('.playerTriggerInfo').forEach((r) => r.classList.add('d-none'));
+    this.$triggerInfo.querySelectorAll('.playerTriggerInfo').forEach((r) =>
+      r.classList.add('d-none')
+    );
     display.$triggerElem.classList.remove('d-none');
     this.$partyInfo.querySelectorAll('.playerInfoRow').forEach((r) => {
       r.classList.remove('border');
@@ -366,8 +381,9 @@ export default class EmulatedPartyInfo extends EventBus {
 
     $container.append(this._wrapCollapse({
       time: EmulatorCommon.timeToString(
-          encounter.encounter.duration - encounter.encounter.initialOffset,
-          false),
+        encounter.encounter.duration - encounter.encounter.initialOffset,
+        false,
+      ),
       name: 'Final Data',
       classes: ['data'],
       $obj: $finalDataViewer,
@@ -380,16 +396,16 @@ export default class EmulatedPartyInfo extends EventBus {
     const type = trigger.status.responseType;
 
     switch (type) {
-    case 'info':
-      return 'info';
-    case 'alert':
-      return 'bell';
-    case 'alarm':
-      return 'exclamation';
-    case 'tts':
-      return 'bullhorn';
-    case 'audiofile':
-      return 'volume-up';
+      case 'info':
+        return 'info';
+      case 'alert':
+        return 'bell';
+      case 'alarm':
+        return 'exclamation';
+      case 'tts':
+        return 'bullhorn';
+      case 'audiofile':
+        return 'volume-up';
     }
 
     return undefined;
@@ -397,14 +413,16 @@ export default class EmulatedPartyInfo extends EventBus {
 
   getTriggerFiredLabelTime(trigger: PerspectiveTrigger): string {
     return EmulatorCommon.timeToString(
-        trigger.logLine.offset - (this.emulator.currentEncounter?.encounter.initialOffset ?? 0),
-        false);
+      trigger.logLine.offset - (this.emulator.currentEncounter?.encounter.initialOffset ?? 0),
+      false,
+    );
   }
 
   getTriggerResolvedLabelTime(trigger: PerspectiveTrigger): string {
     return EmulatorCommon.timeToString(
-        trigger.resolvedOffset - (this.emulator.currentEncounter?.encounter.initialOffset ?? 0),
-        false);
+      trigger.resolvedOffset - (this.emulator.currentEncounter?.encounter.initialOffset ?? 0),
+      false,
+    );
   }
 
   _wrapCollapse(params: CollapseParams): HTMLElement {
@@ -452,4 +470,3 @@ export default class EmulatedPartyInfo extends EventBus {
 
   static jobOrder = jobOrder;
 }
-

@@ -7,6 +7,17 @@ const path = require('path');
 const rulesDirPlugin = require('eslint-plugin-rulesdir');
 rulesDirPlugin.RULES_DIR = path.join(__dirname, 'eslint');
 
+// lineWidth specified depending on file location.
+const dprintConfig = {
+  'bracePosition': 'maintain',
+  'indentWidth': 2,
+  'newLineKind': 'crlf',
+  'nextControlFlowPosition': 'maintain',
+  'operatorPosition': 'maintain',
+  'quoteStyle': 'alwaysSingle',
+  'useBraces': 'maintain',
+};
+
 const settings = {
   'env': {
     'browser': true,
@@ -22,7 +33,10 @@ const settings = {
     '!.*',
     '.git/',
     '.venv/',
+    'bin/',
     'dist/',
+    'docs/',
+    'node_modules/',
     'plugin/',
     'publish/',
     'resources/lib/',
@@ -32,6 +46,7 @@ const settings = {
     'sourceType': 'module',
   },
   'plugins': [
+    'dprint',
     'import',
     'rulesdir',
   ],
@@ -49,10 +64,25 @@ const settings = {
   },
 };
 
+const dprintRule = (width) => {
+  return {
+    'dprint/dprint': [
+      'warn',
+      {
+        config: {
+          ...dprintConfig,
+          'lineWidth': width,
+        },
+      },
+    ],
+  };
+};
+
 // General rules for all files.
 const rules = {
+  ...dprintRule(100),
   'arrow-spacing': [
-    'error',
+    'warn',
     {
       'after': true,
       'before': true,
@@ -64,8 +94,10 @@ const rules = {
       'properties': 'always',
     },
   ],
+  // Handled by dprint.
+  'comma-dangle': 'off',
   'curly': [
-    'error',
+    'warn',
     'multi-or-nest',
     'consistent',
   ],
@@ -83,30 +115,8 @@ const rules = {
     },
   ],
   'import/no-webpack-loader-syntax': 'error',
-  'indent': [
-    'error',
-    2,
-    {
-      'ArrayExpression': 1,
-      'CallExpression': {
-        'arguments': 2,
-      },
-      'FunctionDeclaration': {
-        'parameters': 2,
-      },
-      'FunctionExpression': {
-        'parameters': 2,
-      },
-      'ignoreComments': false,
-      'ignoredNodes': [
-        // The indent rule does a poor job with TypeScript type declarations, so disable.
-        'TSIntersectionType *',
-        'TSTypeAliasDeclaration *',
-        'TSUnionType *',
-      ],
-      'ObjectExpression': 1,
-    },
-  ],
+  // Handled by dprint.
+  'indent': 'off',
   'linebreak-style': [
     'error',
     'windows',
@@ -135,8 +145,8 @@ const rules = {
     'always',
   ],
   'no-console': 'off',
-  'no-duplicate-imports': 'error',
-  'no-else-return': 'error',
+  'no-duplicate-imports': 'warn',
+  'no-else-return': 'warn',
   'no-eval': 'error',
   'no-implied-eval': 'error',
   'no-sequences': 'error',
@@ -152,7 +162,7 @@ const rules = {
     },
   ],
   'object-curly-spacing': [
-    'error',
+    'warn',
     'always',
   ],
   'object-property-newline': [
@@ -179,12 +189,12 @@ const rules = {
     ['en', 'de', 'fr', 'ja', 'cn', 'ko'],
   ],
   'space-in-parens': [
-    'error',
+    'warn',
     'never',
   ],
-  'space-infix-ops': 'error',
+  'space-infix-ops': 'warn',
   'space-unary-ops': [
-    'error',
+    'warn',
     {
       'nonwords': false,
       'words': true,
@@ -217,13 +227,16 @@ const tsOverrides = {
   'plugins': ['@typescript-eslint', 'prefer-arrow'],
   'rules': {
     '@typescript-eslint/consistent-type-assertions': [
-      'error', {
+      'error',
+      {
         assertionStyle: 'as',
         objectLiteralTypeAssertions: 'never',
       },
     ],
-    '@typescript-eslint/explicit-module-boundary-types': ['error', { 'allowHigherOrderFunctions': false }],
-    '@typescript-eslint/indent': rules.indent,
+    '@typescript-eslint/explicit-module-boundary-types': [
+      'error',
+      { 'allowHigherOrderFunctions': false },
+    ],
     '@typescript-eslint/member-delimiter-style': ['error', {
       'multiline': {
         'delimiter': 'semi',
@@ -240,10 +253,12 @@ const tsOverrides = {
     '@typescript-eslint/no-non-null-assertion': 'error',
     '@typescript-eslint/no-unsafe-argument': 'error',
     '@typescript-eslint/no-unused-vars': ['error', { 'argsIgnorePattern': '^_\\w+' }],
-    '@typescript-eslint/object-curly-spacing': ['error', 'always'],
+    '@typescript-eslint/object-curly-spacing': ['warn', 'always'],
     'func-style': ['error', 'expression', { 'allowArrowFunctions': true }],
-    'import/order': ['error', { 'alphabetize': { 'caseInsensitive': true, 'order': 'asc' }, 'newlines-between': 'always' }],
-    'indent': 'off',
+    'import/order': [
+      'error',
+      { 'alphabetize': { 'caseInsensitive': true, 'order': 'asc' }, 'newlines-between': 'always' },
+    ],
     'no-invalid-this': 'off',
     'object-shorthand': ['error', 'consistent'],
   },
@@ -267,10 +282,17 @@ const overrides = [
   {
     'files': ['**/oopsyraidsy/data/**/*', '**/raidboss/data/**/*'],
     'rules': {
+      ...dprintRule(300),
       // Raidboss data files always export a trigger set, and explicit types are noisy.
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       // Only meant to be used for `output` parameters!
       '@typescript-eslint/no-non-null-assertion': 'off',
+      'max-len': [
+        'warn',
+        {
+          'code': 300,
+        },
+      ],
       'prefer-arrow/prefer-arrow-functions': 'warn',
       'rulesdir/cactbot-output-strings': 'error',
       'rulesdir/cactbot-response-default-severities': 'error',
@@ -286,15 +308,15 @@ const overrides = [
   {
     'files': ['**/raidboss/data/**/*'],
     'rules': {
-      'rulesdir/cactbot-trigger-property-order': ['error', { 'module': 'raidboss' }],
-      'rulesdir/cactbot-triggerset-property-order': ['error', { 'module': 'raidboss' }],
+      'rulesdir/cactbot-trigger-property-order': ['warn', { 'module': 'raidboss' }],
+      'rulesdir/cactbot-triggerset-property-order': ['warn', { 'module': 'raidboss' }],
     },
   },
   {
     'files': ['**/oopsyraidsy/data/**/*'],
     'rules': {
-      'rulesdir/cactbot-trigger-property-order': ['error', { 'module': 'oopsyraidsy' }],
-      'rulesdir/cactbot-triggerset-property-order': ['error', { 'module': 'oopsyraidsy' }],
+      'rulesdir/cactbot-trigger-property-order': ['warn', { 'module': 'oopsyraidsy' }],
+      'rulesdir/cactbot-triggerset-property-order': ['warn', { 'module': 'oopsyraidsy' }],
     },
   },
 ];

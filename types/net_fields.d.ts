@@ -284,6 +284,14 @@ type NetStatusEffectFields = Fields & {
   data4: 19;
 };
 
+// 0x40
+type NetMapFields = Fields & {
+  id: 2;
+  regionName: 3;
+  placeName: 4;
+  placeNameSub: 5;
+};
+
 export type NetFields = {
   'GameLog': NetGameLogFields;
   'ChangeZone': NetChangeZoneFields;
@@ -309,6 +317,7 @@ export type NetFields = {
   'LimitGauge': NetLimitGaugeFields;
   'ActionSync': NetActionSyncFields;
   'StatusEffect': NetStatusEffectFields;
+  'Map': NetMapFields;
   'None': Fields;
 };
 
@@ -318,7 +327,7 @@ export type NetFields = {
 // {a: 1}
 type Reverse<T> = {
   [P in T[keyof T]]: {
-    [K in keyof T]: T[K] extends P ? K : never
+    [K in keyof T]: T[K] extends P ? K : never;
   }[keyof T];
 };
 
