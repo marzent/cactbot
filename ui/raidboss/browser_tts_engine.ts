@@ -106,12 +106,12 @@ export default class BrowserTTSEngine {
 
   playTTS(text: string): void {
     switch (this.engineType) {
-    case TTSEngineType.SpeechSynthesis:
-      this.playSpeechTTS(text);
-      break;
-    case TTSEngineType.GoogleTTS:
-      this.playGoogleTTS(text);
-      break;
+      case TTSEngineType.SpeechSynthesis:
+        this.playSpeechTTS(text);
+        break;
+      case TTSEngineType.GoogleTTS:
+        this.playGoogleTTS(text);
+        break;
     }
   }
 
