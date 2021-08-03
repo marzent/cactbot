@@ -1,14 +1,20 @@
 // TODO: is the first byte of ids always flags, such that "..000000" is always empty?
 const emptyIds = ['E0000000', '80000000'];
 
-import logDefinitions from './netlog_defs';
+import logDefinitions from '../../resources/netlog_defs';
 import FakeNameGenerator from './fake_name_generator';
 
 // notifier here is a { warn: (str) => {} } object to return errors in a more structured way.
 
 export default class Anonymizer {
   constructor() {
-    this.logTypes = logDefinitions;
+    // Remap logDefinitions from log type (instead of name) to definition.
+    this.logTypes = {};
+    for (const logName in logDefinitions) {
+      const def = logDefinitions[logName];
+      this.logTypes[def.type] = def;
+    }
+
     this.nameGenerator = new FakeNameGenerator();
 
     // uppercase hex id -> name
@@ -55,9 +61,9 @@ export default class Anonymizer {
       for (const subFieldName in type.subFields) {
         // Find field idx.
         let fieldIdx = -1;
-        for (const idx in type.fields) {
-          if (type.fields[idx] === subFieldName) {
-            fieldIdx = idx;
+        for (const fieldName in type.fields) {
+          if (fieldName === subFieldName) {
+            fieldIdx = type.fields[fieldName];
             break;
           }
         }
