@@ -34,16 +34,13 @@ type ExcludedLineDocs =
   | 'Error'
   | 'Timer';
 
-// @TODO: These types are missing or unused
-type MissingLineDocs = 'Map';
-
-type LineDocTypes = Exclude<LogDefinitionTypes, ExcludedLineDocs | MissingLineDocs>;
+type LineDocTypes = Exclude<LogDefinitionTypes, ExcludedLineDocs>;
 
 type LineDocType = {
   // We can generate `network` type automatically for everything but regex
   regexes?: {
     network: string;
-    logLine: string;
+    logLine?: string;
   };
   examples: LocaleObject<readonly string[]>;
 };
@@ -52,7 +49,6 @@ type LineDocs = {
   [type in LineDocTypes]: LineDocType;
 };
 
-// @TODO: Remove Partial once everything is mapped
 const lineDocs: LineDocs = {
   GameLog: {
     regexes: {
@@ -210,7 +206,7 @@ const lineDocs: LineDocs = {
       en: [
         '26|2021-04-26T14:36:09.4340000-04:00|35|Physical Damage Up|15.00|400009D5|Dark General|400009D5|Dark General|00|48865|48865||cbcfac4df1554b8f59f343f017ebd793',
         '26|2021-04-26T14:23:38.7560000-04:00|13b|Whispering Dawn|21.00|4000B283|Selene|10FF0002|Potato Chippy|4000016E|00|51893|49487||c7400f0eed1fe9d29834369affc22d3b',
-        '26|2021-07-02T21:57:07.9110000-04:00|82c|Damage Down|30.00|40003D9F|Eden\'s Promise|40003D9D||00|148000|63981880||86ff6bf4cfdd68491274fce1db5677e8',
+        '26|2021-07-02T21:57:07.9110000-04:00|d2|Doom|9.97|40003D9F||10FF0001|Tini Poutini|00|26396|26396||86ff6bf4cfdd68491274fce1db5677e8',
       ],
     },
   },
@@ -334,6 +330,18 @@ const lineDocs: LineDocs = {
       ],
     },
   },
+  Map: {
+    regexes: {
+      network: NetRegexes.map({ capture: true }).source,
+    },
+    examples: {
+      en: [
+        '40|2021-07-30T19:43:08.6270000-07:00|578|Norvrandt|The Copied Factory|Upper Stratum|ee5b5fc06ab4610ef6b4f030fc95c90c',
+        '40|2021-07-30T19:46:49.3830000-07:00|575|Norvrandt|Excavation Tunnels||41e6dae1ab1a3fe18ce3754d7c45a5d0',
+        '40|2021-07-30T19:49:19.8180000-07:00|192|La Noscea|Mist|Mist Subdivision|f3506f063945500b5e7df2172e2ca4d3',
+      ],
+    },
+  },
 } as const;
 
 type LogGuideOptions = {
@@ -445,11 +453,14 @@ ${structureLog}
 \`\`\`log
 Network Log Line Regex:
 ${regexes.network}
-
+`;
+        if (regexes.logLine) {
+          ret += `
 ACT Log Line Regex:
 ${regexes.logLine}
-\`\`\`
 `;
+        }
+        ret += '```\n';
       }
 
       ret += `
