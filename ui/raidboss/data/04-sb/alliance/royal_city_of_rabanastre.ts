@@ -115,7 +115,9 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Find Hashmal; Dodge Left',
           de: 'Finde Hashmallim; Weiche nach Links aus',
+          fr: 'Trouvez Hashmal, Esquivez à gauche',
           cn: '找到BOSS; 向左躲避',
+          ko: '하쉬말림 찾기, 왼쪽으로',
         },
       },
     },
@@ -133,7 +135,9 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Find Hashmal; Dodge Right',
           de: 'Finde Hashmallim; Weiche nach Rechts aus',
+          fr: 'Trouvez Hashmal, Esquivez à droite',
           cn: '找到BOSS; 向右躲避',
+          ko: '하쉬말림 찾기, 오른쪽으로',
         },
       },
     },
@@ -190,7 +194,7 @@ const triggerSet: TriggerSet<Data> = {
           fr: 'Éloignez-vous',
           ja: 'ハンマーから離れる',
           cn: '远离大锤落点',
-          ko: '기둥으로부터 피하기',
+          ko: '기둥 피하기',
         },
       },
     },
