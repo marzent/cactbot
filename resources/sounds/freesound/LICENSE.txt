@@ -1,6 +1,6 @@
-﻿These sounds from freesound.org and licensed via Creative Commons licenses.
+These sounds from freesound.org and licensed via Creative Commons licenses.
 The details of each license along with source for each sound is listed below.
-All sounds have been converted from .wav to  for space.
+All sounds have been converted from .wav to .webm for space.
 
 alarm.webm
   https://freesound.org/people/ZyryTSounds/sounds/219244/
