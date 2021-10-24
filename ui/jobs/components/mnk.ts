@@ -1,10 +1,13 @@
 import EffectId from '../../../resources/effect_id';
+import { JobDetail } from '../../../types/event';
+import { NetMatches } from '../../../types/net_matches';
 import { kAbility } from '../constants';
+import { Bars } from '../jobs';
 import { computeBackgroundColorFrom } from '../utils';
 
-let resetFunc = null;
+let resetFunc: (bars: Bars) => void;
 
-export function setup(bars) {
+export const setup = (bars: Bars): void => {
   const formTimer = bars.addTimerBar({
     id: 'mnk-timers-combo',
     fgColor: 'mnk-color-form',
@@ -14,12 +17,12 @@ export function setup(bars) {
     classList: ['mnk-color-chakra'],
   });
 
-  bars.onJobDetailUpdate((jobDetail) => {
-    const chakra = jobDetail.chakraStacks;
+  bars.onJobDetailUpdate('MNK', (jobDetail: JobDetail['MNK']) => {
+    const chakra = jobDetail.chakraStacks.toString();
     if (textBox.innerText !== chakra) {
       textBox.innerText = chakra;
       const p = textBox.parentNode;
-      if (chakra < 5)
+      if (jobDetail.chakraStacks < 5)
         p.classList.add('dim');
       else
         p.classList.remove('dim');
@@ -48,7 +51,7 @@ export function setup(bars) {
 
   bars.onYouGainEffect(EffectId.TwinSnakes, (name, matches) => {
     // -0.5 for logline delay
-    twinSnakesBox.duration = parseFloat(matches.duration) - 0.5;
+    twinSnakesBox.duration = parseFloat(matches.duration ?? '0') - 0.5;
   });
   bars.onYouLoseEffect(EffectId.TwinSnakes, () => twinSnakesBox.duration = 0);
 
@@ -67,7 +70,7 @@ export function setup(bars) {
   bars.onYouGainEffect(EffectId.PerfectBalance, (name, matches) => {
     if (!perfectBalanceActive) {
       formTimer.duration = 0;
-      formTimer.duration = parseFloat(matches.duration);
+      formTimer.duration = parseFloat(matches.duration ?? '0');
       formTimer.fg = computeBackgroundColorFrom(formTimer, 'mnk-color-pb');
       perfectBalanceActive = true;
     }
@@ -78,9 +81,9 @@ export function setup(bars) {
     perfectBalanceActive = false;
   });
 
-  const changeFormFunc = (name, matches) => {
+  const changeFormFunc = (name: string, matches: Partial<NetMatches['GainsEffect']>) => {
     formTimer.duration = 0;
-    formTimer.duration = parseFloat(matches.duration);
+    formTimer.duration = parseFloat(matches.duration ?? '0');
     formTimer.fg = computeBackgroundColorFrom(formTimer, 'mnk-color-form');
   };
   bars.onYouGainEffect([
@@ -89,7 +92,7 @@ export function setup(bars) {
     EffectId.CoeurlForm,
   ], changeFormFunc);
 
-  resetFunc = (bars) => {
+  resetFunc = (_bars: Bars): void => {
     twinSnakesBox.duration = 0;
     demolishBox.duration = 0;
     dragonKickBox.duration = 0;
@@ -97,9 +100,9 @@ export function setup(bars) {
     formTimer.fg = computeBackgroundColorFrom(formTimer, 'mnk-color-form');
     perfectBalanceActive = false;
   };
-}
+};
 
-export function reset(bars) {
+export const reset = (bars: Bars): void => {
   if (resetFunc)
     resetFunc(bars);
-}
+};
