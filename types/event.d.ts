@@ -298,9 +298,9 @@ type PlayerChangedJobDetails<T> = {
 };
 
 type PlayerChangedBase = {
-  // Decimal player id, as a string.
-  // TODO: should the plugin emit a decimal number or a hex string instead?
-  id: string;
+  // Decimal player id.
+  // TODO: should the plugin emit a hex string instead?
+  id: number;
   name: string;
   level: number;
   currentHP: number;
@@ -403,9 +403,9 @@ type CactbotLoadDataHandler = (msg: {
   overlay: string;
 }) => ({ data: SavedConfig } | undefined);
 
-type CactbotChooseDirectoryHandler = <T>(msg: {
+type CactbotChooseDirectoryHandler = (msg: {
   call: 'cactbotChooseDirectory';
-}) => ({ data: T } | undefined);
+}) => ({ data: string } | undefined);
 
 export type OverlayHandlerAll = {
   'broadcast': BroadcastHandler;

@@ -19,6 +19,7 @@ import {
   MistakeMap,
   OopsyDeathReason,
   OopsyField,
+  OopsyFileData,
   OopsyMistake,
   OopsyMistakeType,
   OopsyTrigger,
@@ -27,7 +28,6 @@ import {
 import { ZoneIdType } from '../../types/trigger';
 
 import { CombatState } from './combat_state';
-import { OopsyFileData } from './data/oopsy_manifest.txt';
 import { MistakeCollector } from './mistake_collector';
 import {
   GetShareMistakeText,
@@ -699,7 +699,7 @@ export class DamageTracker {
     this.job = e.detail.job;
     this.role = Util.jobToRole(this.job);
     this.ReloadTriggers();
-    this.playerStateTracker.SetPlayerId(parseInt(e.detail.id).toString(16));
+    this.playerStateTracker.SetPlayerId(e.detail.id.toString(16));
   }
 
   ProcessDataFiles(): void {

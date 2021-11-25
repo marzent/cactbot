@@ -128,3 +128,7 @@ export type LooseOopsyTriggerSet = Exclude<Partial<OopsyTriggerSet<OopsyData>>, 
   zoneRegex?: RegExp | { [lang in Lang]?: RegExp };
   triggers?: LooseOopsyTrigger[];
 };
+
+export interface OopsyFileData {
+  [filename: string]: LooseOopsyTriggerSet;
+}
