@@ -54,6 +54,12 @@ const exVersionToName = {
     cn: '暗影之逆焰 (5.x)',
     ko: '칠흑의 반역자 (5.x)',
   },
+  '4': {
+    en: 'Endwalker (EW 6.x)',
+    de: 'Endwalker (EW 6.x)',
+    fr: 'Endwalker (EW 6.x)',
+    ja: '暁月のフィナーレ (6.x)',
+  },
 } as const;
 
 const exVersionToShortName: { [exVersion: string]: LocaleText } = {
@@ -88,6 +94,13 @@ const exVersionToShortName: { [exVersion: string]: LocaleText } = {
     ja: '漆黒',
     cn: '5.X',
     ko: '칠흑',
+  },
+  '4': {
+    en: 'EW',
+    de: 'EW',
+    fr: 'EW',
+    ja: '暁月',
+    cn: '6.X',
   },
 };
 

@@ -10,12 +10,26 @@ export const kMPUI2Rate = 0.45;
 export const kMPUI3Rate = 0.60;
 export const kMPTickInterval = 3.0;
 
+/**
+ * DoT ticks on every "Eorzea minute",
+ * and it is known that 1 "Eorzea day" equals to 70 "Earth minutes",
+ * so 1 "Eorzea minute" is equal to `70 * 60 / (1 * 24 * 60)` = `2.9166667`
+ */
+export const kDoTTickInterval = 70 * 60 / (1 * 24 * 60);
+
 export const kWellFedContentTypes: number[] = [
   ContentType.Dungeons,
   ContentType.Trials,
   ContentType.Raids,
   ContentType.UltimateRaids,
 ];
+
+// this object holds effect id that is different from the patch 6.x
+// or removed in patch 6.x. In order to support CN/KR that is still
+// in patch 5.x, we move them here.
+export const patch5xEffectId = {
+  FurtherRuin5x: '4BC',
+};
 
 export const kAbility = {
   // LB
@@ -117,6 +131,8 @@ export const kAbility = {
   AspectedHelios: 'E11',
   Draw: 'E06',
   Divination: '40A8',
+  // SGE
+  Rhizomata: '5EF5',
   // MNK
   DragonKick: '4A',
   TwinSnakes: '3D',
@@ -207,6 +223,7 @@ export const kAbility = {
   Thunder3: '99',
   Thunder4: '1CFC',
   // SMN
+  // 5.x
   Miasma: 'A8',
   Miasma3: '1D01',
   BioSmn: 'A4',

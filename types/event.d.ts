@@ -43,6 +43,12 @@ export interface JobDetail {
     heldCard: 'Balance' | 'Bole' | 'Arrow' | 'Spear' | 'Ewer' | 'Spire';
     arcanums: ('Solar' | 'Lunar' | 'Celestial')[];
   };
+  'SGE': {
+    addersgallMilliseconds: number;
+    addersgall: 0 | 1 | 2 | 3;
+    addersting: 0 | 1 | 2 | 3;
+    eukrasia: 0 | 1;
+  };
   'MNK': {
     chakraStacks: number;
   };
@@ -99,12 +105,21 @@ export interface JobDetail {
     aetherflowStacks: number;
   };
   'SMN': {
+    // TODO: remove this after CN/KR patch 6.0 released.
     stanceMilliseconds: number;
     bahamutStance: 5 | 0;
     bahamutSummoned: 1 | 0;
     aetherflowStacks: number;
     dreadwyrmStacks: number;
     phoenixReady: number;
+  } | {
+    aetherflowStacks: number;
+    tranceMilliseconds: number;
+    attunementMilliseconds: number;
+    attunement: number;
+    usableArcanum: ('Ruby' | 'Topaz' | 'Emerald')[];
+    activePrimal: ('Ifrit' | 'Titan' | 'Garuda')[];
+    nextSummoned: 'Bahamut' | 'Phoenix';
   };
   'RDM': {
     whiteMana: number;
@@ -369,6 +384,11 @@ type GetCombatantsHandler = (msg: {
   props?: string[];
 }) => { combatants: PluginCombatantState[] };
 
+type OpenWebsiteWithWSHandler = (msg: {
+  call: 'openWebsiteWithWS';
+  url: string;
+}) => void;
+
 type CactbotReloadOverlaysHandler = (msg: {
   call: 'cactbotReloadOverlays';
 }) => void;
@@ -411,6 +431,7 @@ export type OverlayHandlerAll = {
   'broadcast': BroadcastHandler;
   'subscribe': SubscribeHandler;
   'getCombatants': GetCombatantsHandler;
+  'openWebsiteWithWS': OpenWebsiteWithWSHandler;
   'cactbotReloadOverlays': CactbotReloadOverlaysHandler;
   'cactbotLoadUser': CactbotLoadUserHandler;
   'cactbotRequestPlayerUpdate': CactbotRequestPlayerUpdateHandler;

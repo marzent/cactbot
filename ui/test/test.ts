@@ -79,8 +79,16 @@ addOverlayListener('onPlayerChangedEvent', (e) => {
       jobInfo.innerText =
         `${detail.jobDetail.lilyStacks} (${detail.jobDetail.lilyMilliseconds}) | ${detail.jobDetail.bloodlilyStacks}`;
     } else if (detail.job === 'SMN' && detail.jobDetail) {
-      jobInfo.innerText =
-        `${detail.jobDetail.aetherflowStacks} | ${detail.jobDetail.dreadwyrmStacks} | ${detail.jobDetail.bahamutStance} | ${detail.jobDetail.bahamutSummoned} (${detail.jobDetail.stanceMilliseconds}) | ${detail.jobDetail.phoenixReady}`;
+      // TODO: remove if-check after CN/KR patch 6.0 released
+      if ('bahamutStance' in detail.jobDetail) {
+        jobInfo.innerText =
+          `${detail.jobDetail.aetherflowStacks} | ${detail.jobDetail.dreadwyrmStacks} | ${detail.jobDetail.bahamutStance} | ${detail.jobDetail.bahamutSummoned} (${detail.jobDetail.stanceMilliseconds}) | ${detail.jobDetail.phoenixReady}`;
+      } else if ('tranceMilliseconds' in detail.jobDetail) {
+        jobInfo.innerText =
+          `${detail.jobDetail.aetherflowStacks} | ${detail.jobDetail.tranceMilliseconds} | ${detail.jobDetail.attunement} | ${detail.jobDetail.attunementMilliseconds} | [${
+            detail.jobDetail.activePrimal.join(', ')
+          }] | [${detail.jobDetail.usableArcanum.join(', ')}] | ${detail.jobDetail.nextSummoned}`;
+      }
     } else if (detail.job === 'SCH' && detail.jobDetail) {
       jobInfo.innerText =
         `${detail.jobDetail.aetherflowStacks} | ${detail.jobDetail.fairyGauge} | ${detail.jobDetail.fairyStatus} (${detail.jobDetail.fairyMilliseconds})`;
@@ -96,6 +104,9 @@ addOverlayListener('onPlayerChangedEvent', (e) => {
     } else if (detail.job === 'SAM' && detail.jobDetail) {
       jobInfo.innerText =
         `${detail.jobDetail.kenki} | ${detail.jobDetail.meditationStacks}(${detail.jobDetail.setsu.toString()},${detail.jobDetail.getsu.toString()},${detail.jobDetail.ka.toString()})`;
+    } else if (detail.job === 'SGE' && detail.jobDetail) {
+      jobInfo.innerText =
+        `${detail.jobDetail.addersgall} (${detail.jobDetail.addersgallMilliseconds}) | ${detail.jobDetail.addersting} | ${detail.jobDetail.eukrasia.toString()}`;
     } else {
       jobInfo.innerText = '';
     }
