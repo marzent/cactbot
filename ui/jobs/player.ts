@@ -58,6 +58,7 @@ export interface EventMap {
   // triggered when effect gains or loses
   'effect/gain': (effectId: string, info: PartialFieldMatches<'GainsEffect'>) => void;
   'effect/lose': (effectId: string, info: PartialFieldMatches<'LosesEffect'>) => void;
+  // triggered when you gain or lose a effect
   'effect/gain/you': (effectId: string, info: PartialFieldMatches<'GainsEffect'>) => void;
   'effect/lose/you': (effectId: string, info: PartialFieldMatches<'LosesEffect'>) => void;
 }
@@ -150,13 +151,13 @@ export class Player extends PlayerBase {
   // TODO: should make combo tracker as event emitter too?
   combo: ComboTracker;
 
-  constructor(jobsEmitter: JobsEventEmitter) {
+  constructor(jobsEmitter: JobsEventEmitter, private is5x: boolean) {
     super();
     this.ee = new EventEmitter();
     this.jobsEmitter = jobsEmitter;
 
     // setup combo tracker
-    this.combo = ComboTracker.setup((id) => {
+    this.combo = ComboTracker.setup(this.is5x, (id) => {
       this.emit('action/combo', id, this.combo);
     });
     this.on('action/you', (actionId) => {
@@ -282,6 +283,13 @@ export class Player extends PlayerBase {
     if (prevJob !== data.job) {
       this.job = data.job;
       this.emit('job', data.job);
+
+      // Because the `PlayerStat` log line is always emitted before
+      // the `onPlayerChangedEvent` event, and we have job components
+      // that relies on the stat data when initializing, so we need to
+      // manually emit the stat data here.
+      if (this.stats)
+        this.emit('stat', this.stats, { gcdSkill: this.gcdSkill, gcdSpell: this.gcdSpell });
     }
 
     // update level
@@ -417,7 +425,7 @@ export class Player extends PlayerBase {
         if (!effectId)
           break;
 
-        if (matches.sourceId?.toUpperCase() === this.idHex)
+        if (matches.targetId?.toUpperCase() === this.idHex)
           this.emit('effect/gain/you', effectId, matches);
         this.emit('effect/gain', effectId, matches);
         break;
@@ -428,7 +436,7 @@ export class Player extends PlayerBase {
         if (!effectId)
           break;
 
-        if (matches.sourceId?.toUpperCase() === this.idHex)
+        if (matches.targetId?.toUpperCase() === this.idHex)
           this.emit('effect/lose/you', effectId, matches);
         this.emit('effect/lose', effectId, matches);
         break;

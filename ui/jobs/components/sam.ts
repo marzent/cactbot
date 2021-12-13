@@ -28,9 +28,13 @@ export class SAMComponent extends BaseComponent {
     fgColor: 'combo-color',
   });
 
+  const stacksContainer = document.createElement('div');
+  stacksContainer.id = 'sam-stacks';
+  stacksContainer.classList.add('stacks');
   const senContainer = document.createElement('div');
-  senContainer.id = 'sam-stacks';
-  this.bars.addJobBarContainer().appendChild(senContainer);
+  senContainer.id = 'sam-stacks-sen';
+  stacksContainer.appendChild(senContainer);
+  this.bars.addJobBarContainer().appendChild(stacksContainer);
 
   this.setsu = document.createElement('div');
   this.getsu = document.createElement('div');
@@ -74,7 +78,7 @@ export class SAMComponent extends BaseComponent {
     if (combo.isFinalSkill)
       return;
     if (skill)
-      this.comboTimer.duration = 15;
+      this.comboTimer.duration = this.comboDuration;
   }
   override onJobDetailUpdate(jobDetail: JobDetail['SAM']): void {
     this.kenkiGauge.innerText = jobDetail.kenki.toString();

@@ -141,6 +141,11 @@ export class Bars {
       barsContainer.classList.add('pvp');
     opacityContainer.appendChild(barsContainer);
 
+    const procsContainer = document.createElement('div');
+    procsContainer.id = 'procs-container';
+    procsContainer.classList.toggle('compact', this.options.CompactView);
+    opacityContainer.appendChild(procsContainer);
+
     if (shouldShow.buffList) {
       if (this.options.JustBuffTracker) {
         // Just alias these two together so the rest of the code doesn't have
@@ -255,8 +260,9 @@ export class Bars {
       container = document.createElement('div');
       container.id = elementId;
       document.getElementById('bars')?.appendChild(container);
-      container.classList.add('proc-box');
     }
+
+    document.getElementById('procs-container')?.appendChild(container);
 
     const timerBox = TimerBox.create({
       stylefill: 'empty',
@@ -677,17 +683,10 @@ export class Bars {
     this.o.gpBar.maxvalue = data.maxGp.toString();
   }
 
-  _shouldPlayGpAlarm(data: { gp: number; gpAlarmReady: boolean; gpPotion: boolean }): boolean {
-    // GP Alarm
-    if (data.gp < this.options.GpAlarmPoint) {
-      return true;
-    } else if (data.gpAlarmReady && !data.gpPotion && data.gp >= this.options.GpAlarmPoint) {
-      const audio = new Audio('../../resources/sounds/freesound/power_up.webm');
-      audio.volume = this.options.GpAlarmSoundVolume;
-      void audio.play();
-      return false;
-    }
-    return true;
+  _playGpAlarm(): void {
+    const audio = new Audio('../../resources/sounds/freesound/power_up.webm');
+    audio.volume = this.options.GpAlarmSoundVolume;
+    void audio.play();
   }
 
   _updateOpacity(transparent: boolean): void {
