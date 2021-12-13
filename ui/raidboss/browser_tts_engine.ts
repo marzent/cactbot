@@ -61,7 +61,7 @@ export default class BrowserTTSEngine {
   private speechLang?: string;
   private speechVoice?: SpeechSynthesisVoice;
 
-  constructor(lang: Lang) {
+  constructor(lang: Lang, google: boolean) {
     this.googleTTSLang = lang === 'cn' ? 'zh' : lang;
     // TODO: should there be options for different voices here so that
     // everybody isn't forced into Microsoft Anna?
@@ -77,16 +77,18 @@ export default class BrowserTTSEngine {
 
     // figure out what TTS engine type we need
     if (window.speechSynthesis !== undefined) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        const speechLang = cactbotLangToSpeechLang[lang];
-        const voice = window.speechSynthesis.getVoices().find((voice) => voice.lang === speechLang);
-        if (voice) {
-          this.speechLang = speechLang;
-          this.speechVoice = voice;
-          window.speechSynthesis.onvoiceschanged = null;
-          this.engineType = TTSEngineType.SpeechSynthesis;
-        } else {
-          console.error('BrowserTTS error: could not find voice');
+      if (!google) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          const speechLang = cactbotLangToSpeechLang[lang];
+          const voice = window.speechSynthesis.getVoices().find((voice) => voice.lang === speechLang);
+          if (voice) {
+           this.speechLang = speechLang;
+            this.speechVoice = voice;
+            window.speechSynthesis.onvoiceschanged = null;
+            this.engineType = TTSEngineType.SpeechSynthesis;
+          } else {
+            console.error('BrowserTTS error: could not find voice');
+          }
         }
       };
     } else {
