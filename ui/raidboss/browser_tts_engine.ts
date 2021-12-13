@@ -38,9 +38,8 @@ class GoogleTTSItem implements TTSItem {
     this.text = text;
     this.lang = lang;
     const audio = document.createElement('audio');
-    const header = 'data:audio/mpeg;base64,';
-    void googleTTS.getAudioBase64(text, { lang: lang })
-      .then((result) => audio.src = header + result);
+    const url = googleTTS.getAudioUrl(text, { lang: lang });
+    audio.src = url;
     document.body.appendChild(audio);
     this.item = audio;
   }
