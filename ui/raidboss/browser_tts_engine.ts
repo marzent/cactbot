@@ -86,7 +86,7 @@ export default class BrowserTTSEngine {
           window.speechSynthesis.onvoiceschanged = null;
           this.engineType = TTSEngineType.SpeechSynthesis;
         } else {
-          console.warn('BrowserTTS warning: could not find voice');
+          console.error('BrowserTTS error: could not find voice');
         }
       };
     } else {
