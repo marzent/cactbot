@@ -17,6 +17,9 @@ export const kMPTickInterval = 3.0;
  */
 export const kDoTTickInterval = 70 * 60 / (1 * 24 * 60);
 
+export const kComboDelay = 30;
+export const kComboDelay5x = 15;
+
 export const kWellFedContentTypes: number[] = [
   ContentType.Dungeons,
   ContentType.Trials,
@@ -159,6 +162,7 @@ export const kAbility = {
   LanceCharge: '55',
   DragonSight: '1CE6',
   BattleLitany: 'DE5',
+  DraconianFury: '64AA',
   // NIN
   SpinningEdge: '8C0',
   GustSlash: '8C2',
@@ -188,8 +192,14 @@ export const kAbility = {
   KaeshiSetsugekka: '4066',
   HissatsuGuren: '1D48',
   HissatsuSenei: '4061',
+  Fuko: '64B4',
+  // RPR
+  ArcaneCircle: '5F55',
   // BRD
   BattleVoice: '76',
+  MagesBallad: '72',
+  ArmysPaeon: '74',
+  theWanderersMinuet: 'DE7',
   // MCH
   SplitShot: 'B32',
   SlugShot: 'B34',
@@ -236,6 +246,7 @@ export const kAbility = {
   DreadwyrmTrance: 'DFD',
   FirebirdTrance: '40A5',
   Devotion: '1D1A',
+  SearingLight: '64F2',
   // RDM
   Verstone: '1D57',
   Verfire: '1D56',
@@ -272,6 +283,149 @@ export const kAbility = {
   // Role Action
   LucidDreaming: '1D8A',
 } as const;
+
+// Combo actions for every jobs, this would apply to ComboTracker when
+// it is initialized, for determining whether the current action is in combo.
+export const kComboActions: string[][] = [
+  // PLD
+  [
+    kAbility.FastBlade,
+    kAbility.RiotBlade,
+    kAbility.GoringBlade,
+  ],
+  // WAR
+  [
+    kAbility.HeavySwing,
+    kAbility.Maim,
+    kAbility.StormsEye,
+  ],
+  [
+    kAbility.HeavySwing,
+    kAbility.Maim,
+    kAbility.StormsPath,
+  ],
+  [
+    kAbility.Overpower,
+    kAbility.MythrilTempest,
+  ],
+  // DRK
+  [
+    kAbility.HardSlash,
+    kAbility.SyphonStrike,
+    kAbility.Souleater,
+  ],
+  [
+    kAbility.Unleash,
+    kAbility.StalwartSoul,
+  ],
+  // GNB
+  [
+    kAbility.KeenEdge,
+    kAbility.BrutalShell,
+    kAbility.SolidBarrel,
+  ],
+  [
+    kAbility.DemonSlice,
+    kAbility.DemonSlaughter,
+  ],
+  // DRG
+  [
+    kAbility.TrueThrust,
+    kAbility.Disembowel,
+    kAbility.ChaosThrust,
+  ],
+  [
+    kAbility.RaidenThrust,
+    kAbility.Disembowel,
+    kAbility.ChaosThrust,
+  ],
+  [
+    kAbility.DoomSpike,
+    kAbility.SonicThrust,
+    kAbility.CoerthanTorment,
+  ],
+  [
+    kAbility.DraconianFury,
+    kAbility.SonicThrust,
+    kAbility.CoerthanTorment,
+  ],
+  // NIN
+  [
+    kAbility.SpinningEdge,
+    kAbility.GustSlash,
+    kAbility.AeolianEdge,
+  ],
+  [
+    kAbility.SpinningEdge,
+    kAbility.GustSlash,
+    kAbility.ArmorCrush,
+  ],
+  [
+    kAbility.DeathBlossom,
+    kAbility.HakkeMujinsatsu,
+  ],
+  // SAM
+  [
+    kAbility.Hakaze,
+    kAbility.Jinpu,
+    kAbility.Gekko,
+  ],
+  [
+    kAbility.Hakaze,
+    kAbility.Shifu,
+    kAbility.Kasha,
+  ],
+  [
+    kAbility.Hakaze,
+    kAbility.Yukikaze,
+  ],
+  [
+    kAbility.Fuga,
+    kAbility.Mangetsu,
+  ],
+  [
+    kAbility.Fuga,
+    kAbility.Oka,
+  ],
+  [
+    kAbility.Fuko,
+    kAbility.Mangetsu,
+  ],
+  [
+    kAbility.Fuko,
+    kAbility.Oka,
+  ],
+  // MCH
+  [
+    kAbility.SplitShot,
+    kAbility.SlugShot,
+    kAbility.CleanShot,
+  ],
+  [
+    kAbility.HeatedSplitShot,
+    kAbility.SlugShot,
+    kAbility.CleanShot,
+  ],
+  [
+    kAbility.HeatedSplitShot,
+    kAbility.HeatedSlugShot,
+    kAbility.CleanShot,
+  ],
+  [
+    kAbility.HeatedSplitShot,
+    kAbility.HeatedSlugShot,
+    kAbility.HeatedCleanShot,
+  ],
+  // DNC
+  [
+    kAbility.Cascade,
+    kAbility.Fountain,
+  ],
+  [
+    kAbility.Windmill,
+    kAbility.Bladeshower,
+  ],
+];
 
 // Full skill names of abilities that break combos.
 // TODO: it's sad to have to duplicate combo abilities here to catch out-of-order usage.
@@ -335,6 +489,7 @@ export const kComboBreakers = [
   kAbility.Mangetsu,
   kAbility.Oka,
   kAbility.MeikyoShisui,
+  kAbility.Fuko,
   // MCH
   kAbility.SplitShot,
   kAbility.SlugShot,
@@ -391,7 +546,8 @@ export const kComboBreakers5x = [
 ];
 
 // [level][Sub][Div]
-// Source: http://theoryjerks.akhmorning.com/resources/levelmods/
+// FIXME: Due to 6.0 data downscale, seems all parameter between lv50-80 has been changed
+// 70 80 90 has been determined, between them still lack
 export const kLevelMod = [
   [0, 0],
   [56, 56],
@@ -443,48 +599,45 @@ export const kLevelMod = [
   [311, 311],
   [322, 322],
   [331, 331],
-  [341, 341],
-  [342, 393],
-  [344, 444],
-  [345, 496],
-  [346, 548],
-  [347, 600],
-  [349, 651],
-  [350, 703],
-  [351, 755],
-  [352, 806],
-  [354, 858],
-  [355, 941],
-  [356, 1032],
-  [357, 1133],
-  [358, 1243],
-  [369, 1364],
-  [360, 1497],
-  [361, 1643],
-  [362, 1802],
-  [363, 1978],
-  [364, 2170],
-  [365, 2263],
-  [366, 2360],
-  [367, 2461],
-  [368, 2566],
-  [370, 2676],
-  [372, 2790],
-  [374, 2910],
-  [376, 3034],
-  [378, 3164],
-  [380, 3300],
-  // FIXME: The following are the assumed values added to avoid errors.
-  // 9999 will make unknown gcd about 2.5
-  // Fix this when parameter is determined.
-  [382, 9999],
-  [384, 9999],
-  [386, 9999],
-  [388, 9999],
-  [390, 9999],
-  [392, 9999],
-  [394, 9999],
-  [396, 9999],
-  [398, 9999],
-  [400, 9999],
+  [341, 341], // lv50
+  [342, 900],
+  [344, 900],
+  [345, 900],
+  [346, 900],
+  [347, 900],
+  [349, 900],
+  [350, 900],
+  [351, 900],
+  [352, 900],
+  [354, 900],
+  [355, 900],
+  [356, 900],
+  [357, 900],
+  [358, 900],
+  [369, 900],
+  [360, 900],
+  [361, 900],
+  [362, 900],
+  [363, 900],
+  [364, 900], // lv70, determined
+  [365, 1300],
+  [366, 1300],
+  [367, 1300],
+  [368, 1300],
+  [370, 1300],
+  [372, 1300],
+  [374, 1300],
+  [376, 1300],
+  [378, 1300],
+  [380, 1300], // lv80, determined
+  [382, 1900],
+  [384, 1900],
+  [386, 1900],
+  [388, 1900],
+  [390, 1900],
+  [392, 1900],
+  [394, 1900],
+  [396, 1900],
+  [398, 1900],
+  [400, 1900], // lv90, determined
 ] as const;

@@ -19,9 +19,11 @@ UserConfig.registerOptions('jobs', {
       id: 'CompactView',
       name: {
         en: 'Enable compact view',
+        de: 'Kompaktansicht aktivieren',
         fr: 'Activer la vue compacte',
         ja: 'コンパクトUIを有効にする',
         cn: '启用紧凑视图',
+        ko: '간략한 UI 사용',
       },
       type: 'checkbox',
       default: false,
