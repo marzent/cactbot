@@ -5,6 +5,9 @@ import ZoneId from '../../../../../resources/zone_id';
 import { RaidbossData } from '../../../../../types/data';
 import { TriggerSet } from '../../../../../types/trigger';
 
+// TODO: Intemperance calls out a 4th time; should only call out three
+// TODO: Right/Left + Fire/Light happen at the same time later; collect these together
+
 export type Data = RaidbossData;
 
 const triggerSet: TriggerSet<Data> = {
@@ -84,11 +87,13 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Get hit by red',
           de: 'Von Rot treffen lassen',
           fr: 'Faites-vous toucher par le rouge',
+          ko: '빨간색 맞기',
         },
         blue: {
           en: 'Get hit by blue',
           de: 'Von Blau treffen lassen',
           fr: 'Faites-vous toucher par le bleu',
+          ko: '파란색 맞기',
         },
       },
     },
@@ -116,11 +121,13 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Stand on fire',
           de: 'Auf der Feuerfläche stehen',
           fr: 'Placez-vous sur le feu',
+          ko: '빨간색 바닥 위에 서기',
         },
         light: {
           en: 'Stand on light',
           de: 'Auf der Lichtfläche stehen',
           fr: 'Placez-vous sur la lumière',
+          ko: '흰색 바닥 위에 서기',
         },
       },
     },
