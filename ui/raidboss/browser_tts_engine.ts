@@ -80,17 +80,19 @@ export default class BrowserTTSEngine {
       if (remote) {
         window.speechSynthesis.onvoiceschanged = () => {
           const speechLang = cactbotLangToSpeechLang[lang];
-          const voice = window.speechSynthesis.getVoices().find((voice) => voice.lang === speechLang);
+          const voice = window.speechSynthesis.getVoices().find((voice) =>
+            voice.lang === speechLang
+          );
           if (voice) {
-           this.speechLang = speechLang;
+            this.speechLang = speechLang;
             this.speechVoice = voice;
             window.speechSynthesis.onvoiceschanged = null;
             this.engineType = TTSEngineType.SpeechSynthesis;
           } else {
             console.error('BrowserTTS error: could not find voice');
           }
-        }
-      };
+        };
+      }
     } else {
       console.error('BrowserTTS error: no browser support for window.speechSynthesis');
     }
