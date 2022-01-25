@@ -312,9 +312,11 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         playerTether: {
           en: '${dir} (away from ${player})',
+          fr: '${dir} (éloignez-vous de ${player})',
         },
         birdTether: {
           en: '${dir} (away from bird)',
+          fr: '${dir} (éloignez-vous de l\'oiseau)',
         },
         north: Outputs.north,
         northeast: Outputs.northeast,
@@ -383,7 +385,9 @@ const triggerSet: TriggerSet<Data> = {
       netRegexDe: NetRegexes.ability({ id: '66C6', source: 'Phoinix', capture: false }),
       netRegexFr: NetRegexes.ability({ id: '66C6', source: 'Protophénix', capture: false }),
       netRegexJa: NetRegexes.ability({ id: '66C6', source: 'フェネクス', capture: false }),
-      response: Responses.getOut(),
+      // If you hang around to wait for the spread/stack, you will get killed.
+      // It's easy to get complacement by the end of the fight, so make this loud.
+      response: Responses.getOut('alarm'),
     },
     {
       id: 'P3S Experimental Gloryplume Stack',
