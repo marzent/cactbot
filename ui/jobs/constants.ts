@@ -134,9 +134,13 @@ export const kAbility = {
   AspectedBenefic: 'E0B',
   AspectedHelios: 'E11',
   Draw: 'E06',
+  MinorArcana: '1D13',
   Divination: '40A8',
   // SGE
   Rhizomata: '5EF5',
+  Phlegma: '5EE1',
+  Phlegma2: '5EF3',
+  Phlegma3: '5EF9',
   // MNK
   DragonKick: '4A',
   TwinSnakes: '3D',
