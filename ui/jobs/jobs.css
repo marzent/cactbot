@@ -191,17 +191,27 @@ div.justbuffs div#procs-container {
   font-size: 16px;
 }
 
-#mnk-boxes > div,
 #blm-boxes > div {
   width: 30px;
   height: 30px;
 }
 
-#mnk-boxes .text,
 #blm-boxes .text {
   text-align: center;
   position: relative;
   top: 6px;
+  font-size: 16px;
+}
+
+#mnk-boxes > div {
+  width: 32px;
+  height: 32px;
+}
+
+#mnk-boxes .text {
+  text-align: center;
+  position: relative;
+  top: 7px;
   font-size: 16px;
 }
 
@@ -256,6 +266,7 @@ div.justbuffs div#procs-container {
 
 /* Space for 1 big resource box */
 .drk #right-side-icons,
+.whm #right-side-icons,
 .sge #right-side-icons,
 .nin #right-side-icons {
   left: 250px;
@@ -263,7 +274,6 @@ div.justbuffs div#procs-container {
 
 /* Space for 2 big resource box */
 .pld #right-side-icons,
-.whm #right-side-icons,
 .sch #right-side-icons,
 .ast #right-side-icons {
   left: 288px;
@@ -305,6 +315,14 @@ div.justbuffs div#procs-container {
   margin-right: 0;
 }
 
+#whm-stacks-lily > div.active {
+  background-color: rgb(60, 80, 200);
+}
+
+#whm-stacks-bloodlily > div {
+  background-color: rgba(66, 19, 128, 0.2);
+}
+
 #whm-stacks-bloodlily > div.active {
   background-color: rgb(190, 43, 30);
 }
@@ -331,6 +349,38 @@ div.justbuffs div#procs-container {
 
 #sge-stacks-addersting > div.active {
   background-color: rgb(195, 85, 155);
+}
+
+#mnk-stacks-beastchakra {
+  flex: 5;
+}
+
+#mnk-stacks-lunar > div {
+  background-color: rgba(66, 19, 128, 0.2);
+}
+
+#mnk-stacks-solar > div {
+  background-color: rgba(66, 19, 128, 0.2);
+}
+
+#mnk-stacks-lunar > div.active {
+  background-color: rgb(90, 50, 170);
+}
+
+#mnk-stacks-solar > div.active {
+  background-color: rgb(200, 200, 200);
+}
+
+#mnk-stacks-beastchakra > div.Opo {
+  background-color: rgb(150, 90, 180);
+}
+
+#mnk-stacks-beastchakra > div.Coeurl {
+  background-color: rgb(240, 100, 150);
+}
+
+#mnk-stacks-beastchakra > div.Raptor {
+  background-color: rgb(75, 155, 120);
 }
 
 #sam-stacks-setsu.active {
@@ -594,10 +644,6 @@ div.justbuffs div#procs-container {
 
 .whm-color-lucid {
   background-color: rgb(227, 148, 210);
-}
-
-.whm-color-lily {
-  background-color: rgb(60, 80, 200);
 }
 
 .whm-color-lilysecond {
