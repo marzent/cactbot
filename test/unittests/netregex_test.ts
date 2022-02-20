@@ -30,24 +30,14 @@ describe('netregex tests', () => {
   });
   it('ability', () => {
     const lines = [
-      '21|2020-02-25T01:47:57.4860000-08:00|105D4D8B|Potato Chippy|4095|Glare|4000DA74|Shiva|750003|50960000|1B|40958000|0|0|0|0|0|0|0|0|0|0|0|0|28583118|72360160|10000|0|0|1000|98.83264|99.83972|0|2.967196|101344|103650|5788|0|0|1000|99.19885|104.4785|0|-3.057414|0001073F|0|5b77b8e553b0ee5797caa1ab87b5a910',
-      '22|2020-02-25T01:48:08.2910000-08:00|1067CDB0|Tiny Poutini|3F40|Double Standard Finish|1067CDB0|Tiny Poutini|50E|71D0000|E|7370000|0|0|0|0|0|0|0|0|0|0|0|0|111584|111584|6400|0|0|1000|99.59558|93.36987|0|0.005704641|111584|111584|6400|0|0|1000|99.59558|93.36987|0|0.005704641|000107FF|1|008aa08c35da1e426c6a06b366f40eb6',
-      '21|2020-02-25T01:48:16.8170000-08:00|4000DA82|Shiva|4D9A|Akh Rhai|E0000000||0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|||||||||||44|44|0|0|0|1000|100.6942|95.20997|0|0.01299095|00010877||1ea68a0cb73843c7bb51808eeb8e80f8',
+      '21|2020-02-25T01:47:57.4860000-08:00|105D4D8B|Potato Chippy|4095|Glare|4000DA74|Shiva|750003|50960000|1B|40958000|0|0|0|0|0|0|0|0|0|0|0|0|28583118|72360160|10000|0|0|1000|98.83264|99.83972|0|2.967196|101344|103650|5788|0|0|1000|99.19885|104.4785|0|-3.057414|0001073F|0|1|5b77b8e553b0ee5797caa1ab87b5a910',
+      '22|2020-02-25T01:48:08.2910000-08:00|1067CDB0|Tiny Poutini|3F40|Double Standard Finish|1067CDB0|Tiny Poutini|50E|71D0000|E|7370000|0|0|0|0|0|0|0|0|0|0|0|0|111584|111584|6400|0|0|1000|99.59558|93.36987|0|0.005704641|111584|111584|6400|0|0|1000|99.59558|93.36987|0|0.005704641|000107FF|1|2|008aa08c35da1e426c6a06b366f40eb6',
+      '21|2020-02-25T01:48:16.8170000-08:00|4000DA82|Shiva|4D9A|Akh Rhai|E0000000||0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|0|||||||||||44|44|0|0|0|1000|100.6942|95.20997|0|0.01299095|00010877|0|0|1ea68a0cb73843c7bb51808eeb8e80f8',
     ] as const;
 
     regexCaptureTest((params?: RegexUtilParams) => NetRegexes.ability(params), lines);
-    regexCaptureTest((params?: RegexUtilParams) => NetRegexes.abilityFull(params), lines);
 
-    let matches = lines[0].match(NetRegexes.ability())?.groups;
-    assert.equal(matches?.type, '21');
-    assert.equal(matches?.sourceId, '105D4D8B');
-    assert.equal(matches?.source, 'Potato Chippy');
-    assert.equal(matches?.id, '4095');
-    assert.equal(matches?.ability, 'Glare');
-    assert.equal(matches?.targetId, '4000DA74');
-    assert.equal(matches?.target, 'Shiva');
-
-    matches = lines[0].match(NetRegexes.abilityFull())?.groups;
+    const matches = lines[0].match(NetRegexes.ability())?.groups;
     assert.equal(matches?.type, '21');
     assert.equal(matches?.sourceId, '105D4D8B');
     assert.equal(matches?.source, 'Potato Chippy');
@@ -60,6 +50,8 @@ describe('netregex tests', () => {
     assert.equal(matches?.y, '104.4785');
     assert.equal(matches?.z, '0');
     assert.equal(matches?.heading, '-3.057414');
+
+    assert.equal(NetRegexes.ability().source, NetRegexes.abilityFull().source);
   });
   it('headMarker', () => {
     const lines = [
