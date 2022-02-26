@@ -387,12 +387,32 @@ div.justbuffs div#procs-container {
   background-color: rgb(139, 209, 242);
 }
 
+#rpr-stacks-enshroud > div.lemure {
+  background-color: rgb(70, 255, 255);
+}
+
+#rpr-stacks-enshroud > div.void {
+  background-color: rgb(255, 0, 255);
+}
+
 #sam-stacks-getsu.active {
   background-color: rgb(185, 185, 242);
 }
 
 #sam-stacks-ka.active {
   background-color: rgb(237, 180, 180);
+}
+
+#brd-stacks-magescoda.active {
+  background-color: rgb(143, 90, 143);
+}
+
+#brd-stacks-armyscoda.active {
+  background-color: rgb(207, 205, 52);
+}
+
+#brd-stacks-wandererscoda.active {
+  background-color: rgb(100, 150, 100);
 }
 
 #mch-stacks-wildfire > div.active {
@@ -942,7 +962,7 @@ div.justbuffs div#procs-container {
   background-color: rgb(200, 40, 120);
 }
 
-.rpr-color-rpr-color-bloodsowncircle {
+.rpr-color-bloodsowncircle {
   background-color: rgb(100, 220, 150);
 }
 
@@ -961,6 +981,10 @@ div.justbuffs div#procs-container {
 
 .brd-color-stormbite {
   background-color: rgb(72, 117, 202);
+}
+
+.brd-color-bite {
+  background-color: rgb(150, 30, 90);
 }
 
 .brd-color-straightshotready {
@@ -993,6 +1017,10 @@ div.justbuffs div#procs-container {
 
 .brd-color-soulvoice.high {
   background-color: rgb(250, 100, 0);
+}
+
+.brd-color-empyreal {
+  background-color: rgb(80, 200, 250);
 }
 
 /* MCH */
