@@ -19,6 +19,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegexDe: NetRegexes.startsUsing({ id: '6A55', source: 'Sugriva', capture: false }),
       netRegexFr: NetRegexes.startsUsing({ id: '6A55', source: 'Sugriva', capture: false }),
       netRegexJa: NetRegexes.startsUsing({ id: '6A55', source: 'スグリーヴァ', capture: false }),
+      netRegexCn: NetRegexes.startsUsing({ id: '6A55', source: '须羯里婆', capture: false }),
       response: Responses.getIn(),
     },
     {
@@ -28,6 +29,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegexDe: NetRegexes.startsUsing({ id: '6A56', source: 'Sugriva', capture: false }),
       netRegexFr: NetRegexes.startsUsing({ id: '6A56', source: 'Sugriva', capture: false }),
       netRegexJa: NetRegexes.startsUsing({ id: '6A56', source: 'スグリーヴァ', capture: false }),
+      netRegexCn: NetRegexes.startsUsing({ id: '6A56', source: '须羯里婆', capture: false }),
       response: Responses.getOut(),
     },
     {
@@ -37,12 +39,14 @@ const triggerSet: TriggerSet<Data> = {
       netRegexDe: NetRegexes.startsUsing({ id: '6A53', source: 'Sugriva', capture: false }),
       netRegexFr: NetRegexes.startsUsing({ id: '6A53', source: 'Sugriva', capture: false }),
       netRegexJa: NetRegexes.startsUsing({ id: '6A53', source: 'スグリーヴァ', capture: false }),
+      netRegexCn: NetRegexes.startsUsing({ id: '6A53', source: '须羯里婆', capture: false }),
       infoText: (_data, _matches, output) => output.knockbackStack!(),
       outputStrings: {
         knockbackStack: {
           en: 'Knockback Stack',
           de: 'Rückstoß sammeln',
           fr: 'Package + Poussée',
+          cn: '集合击退',
         },
       },
     },
@@ -55,6 +59,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegexDe: NetRegexes.startsUsing({ id: '6A59', source: 'Sugriva' }),
       netRegexFr: NetRegexes.startsUsing({ id: '6A59', source: 'Sugriva' }),
       netRegexJa: NetRegexes.startsUsing({ id: '6A59', source: 'スグリーヴァ' }),
+      netRegexCn: NetRegexes.startsUsing({ id: '6A59', source: '须羯里婆' }),
       response: Responses.tankCleave(),
     },
     {
@@ -65,6 +70,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegexDe: NetRegexes.startsUsing({ id: '6A59', source: 'Sugriva', capture: false }),
       netRegexFr: NetRegexes.startsUsing({ id: '6A59', source: 'Sugriva', capture: false }),
       netRegexJa: NetRegexes.startsUsing({ id: '6A59', source: 'スグリーヴァ', capture: false }),
+      netRegexCn: NetRegexes.startsUsing({ id: '6A59', source: '须羯里婆', capture: false }),
       response: Responses.getBehind(),
     },
     {
@@ -74,6 +80,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegexDe: NetRegexes.startsUsing({ id: '6A5B', source: 'Sugriva', capture: false }),
       netRegexFr: NetRegexes.startsUsing({ id: '6A5B', source: 'Sugriva', capture: false }),
       netRegexJa: NetRegexes.startsUsing({ id: '6A5B', source: 'スグリーヴァ', capture: false }),
+      netRegexCn: NetRegexes.startsUsing({ id: '6A5B', source: '须羯里婆', capture: false }),
       response: Responses.aoe(),
     },
     {
@@ -83,6 +90,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegexDe: NetRegexes.gainsEffect({ effectId: '7A6', source: 'Yilan' }),
       netRegexFr: NetRegexes.gainsEffect({ effectId: '7A6', source: 'Yilan' }),
       netRegexJa: NetRegexes.gainsEffect({ effectId: '7A6', source: 'ユラン' }),
+      netRegexCn: NetRegexes.gainsEffect({ effectId: '7A6', source: '尤兰' }),
       condition: Conditions.targetIsYou(),
       // t=0.0 gain effect (this line)
       // t=6.3 Mini Light starts casting
@@ -96,6 +104,7 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Forward March Away',
           de: 'Geistlenkung vorwärts',
           fr: 'Marche forcée en avant',
+          cn: '强制移动: 前',
         },
       },
     },
@@ -106,6 +115,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegexDe: NetRegexes.gainsEffect({ effectId: '7A7', source: 'Yilan' }),
       netRegexFr: NetRegexes.gainsEffect({ effectId: '7A7', source: 'Yilan' }),
       netRegexJa: NetRegexes.gainsEffect({ effectId: '7A7', source: 'ユラン' }),
+      netRegexCn: NetRegexes.gainsEffect({ effectId: '7A7', source: '尤兰' }),
       condition: Conditions.targetIsYou(),
       delaySeconds: (_data, matches) => parseFloat(matches.duration) - 4,
       alertText: (_data, _matches, output) => output.text!(),
@@ -114,6 +124,7 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Backwards March Away',
           de: 'Geistlenkung rückwärts',
           fr: 'Marche forcée en arrière',
+          cn: '强制移动: 后',
         },
       },
     },
@@ -124,6 +135,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegexDe: NetRegexes.gainsEffect({ effectId: '7A8', source: 'Yilan' }),
       netRegexFr: NetRegexes.gainsEffect({ effectId: '7A8', source: 'Yilan' }),
       netRegexJa: NetRegexes.gainsEffect({ effectId: '7A8', source: 'ユラン' }),
+      netRegexCn: NetRegexes.gainsEffect({ effectId: '7A8', source: '尤兰' }),
       condition: Conditions.targetIsYou(),
       alertText: (_data, _matches, output) => output.text!(),
       outputStrings: {
@@ -131,6 +143,7 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Left March Away',
           de: 'Geistlenkung links',
           fr: 'Marche forcée à gauche',
+          cn: '强制移动: 左',
         },
       },
     },
@@ -141,6 +154,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegexDe: NetRegexes.gainsEffect({ effectId: '7A9', source: 'Yilan' }),
       netRegexFr: NetRegexes.gainsEffect({ effectId: '7A9', source: 'Yilan' }),
       netRegexJa: NetRegexes.gainsEffect({ effectId: '7A9', source: 'ユラン' }),
+      netRegexCn: NetRegexes.gainsEffect({ effectId: '7A9', source: '尤兰' }),
       condition: Conditions.targetIsYou(),
       alertText: (_data, _matches, output) => output.text!(),
       outputStrings: {
@@ -148,6 +162,7 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Right March Away',
           de: 'Geistlenkung rechts',
           fr: 'Marche forcée à droite',
+          cn: '强制移动: 右',
         },
       },
     },
@@ -159,6 +174,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegexDe: NetRegexes.startsUsing({ id: '6A62', source: 'Yilan', capture: false }),
       netRegexFr: NetRegexes.startsUsing({ id: '6A62', source: 'Yilan', capture: false }),
       netRegexJa: NetRegexes.startsUsing({ id: '6A62', source: 'ユラン', capture: false }),
+      netRegexCn: NetRegexes.startsUsing({ id: '6A62', source: '尤兰', capture: false }),
       response: Responses.getBehind(),
     },
   ],
