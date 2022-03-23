@@ -1834,6 +1834,10 @@ const templateOptions: OptionsTemplate = {
         cn: '忽略ACT的设置，使用Cactbot自带的Google TTS功能（需联网）',
         ko: '웹브라우저를 이용해서 TTS 작동시키기',
       },
+      type: 'checkbox',
+      default: false,
+    },
+    {
       id: 'RumbleEnabled',
       name: {
         en: 'Enable gamepad rumble for triggers',
