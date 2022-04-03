@@ -79,6 +79,8 @@ export const kAbility = {
   Confiteor: '404B',
   Clemency: 'DD5',
   FightOrFlight: '14',
+  SpiritsWithin: '1D',
+  Expiacion: '6493',
   BladeOfValor: '6496',
   // WAR
   HeavySwing: '1F',
@@ -88,7 +90,10 @@ export const kAbility = {
   Overpower: '29',
   MythrilTempest: '404E',
   Tomahawk: '2E',
+  Berserk: '26',
   InnerRelease: '1CDD',
+  Upheaval: '1CDB',
+  Orogeny: '6498',
   // DRK
   HardSlash: 'E21',
   SyphonStrike: 'E27',

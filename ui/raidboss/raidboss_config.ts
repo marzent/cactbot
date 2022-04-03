@@ -276,12 +276,21 @@ const kDetailKeys = {
 const kTimelineTableHeaders = {
   shouldDisplayText: {
     en: 'Show',
+    de: 'Anzeigen',
+    fr: 'Afficher',
+    cn: '显示',
   },
   text: {
     en: 'Timeline Text',
+    de: 'Timeline Text',
+    fr: 'Texte de la timeline',
+    cn: '时间轴文本',
   },
   overrideText: {
     en: 'Rename',
+    de: 'Umbenennen',
+    fr: 'Renommer',
+    cn: '修改文本',
   },
 } as const;
 
@@ -345,6 +354,9 @@ const kMiscTranslations = {
   // The header for the editing timeline section inside a trigger file.
   editTimeline: {
     en: 'Edit Timeline',
+    de: 'Timeline bearbeiten',
+    fr: 'Éditer la timeline',
+    cn: '编辑时间轴',
   },
 };
 
@@ -1727,7 +1739,7 @@ const templateOptions: OptionsTemplate = {
         de: 'Alarm-Text Anzeigedauer (in Sekunden)',
         fr: 'Durée d\'affichage du texte d\'alarme (secondes)',
         ja: '警報テキスト表示時間の長さ (秒)',
-        cn: '警报文字显示持续时间 (秒)',
+        cn: '警报级别文字显示持续时间 (秒)',
         ko: '경고 텍스트를 표시할 시간 (초)',
       },
       type: 'float',
@@ -1740,7 +1752,7 @@ const templateOptions: OptionsTemplate = {
         de: 'Alert-Text Anzeigedauer (in Sekunden)',
         fr: 'Durée d\'affichage du texte d\'alerte (secondes)',
         ja: '警告テキスト表示時間の長さ (秒)',
-        cn: '警告文字显示持续时间 (秒)',
+        cn: '警告级别文字显示持续时间 (秒)',
         ko: '주의 텍스트를 표시할 시간 (초)',
       },
       type: 'float',
@@ -1753,7 +1765,7 @@ const templateOptions: OptionsTemplate = {
         de: 'Info-Text Anzeigedauer (in Sekunden)',
         fr: 'Durée d\'affichage du texte d\'information (secondes)',
         ja: '情報テキスト表示時間の長さ (秒)',
-        cn: '信息文字显示持续时间 (秒)',
+        cn: '信息级别文字显示持续时间 (秒)',
         ko: '안내 텍스트를 표시할 시간 (초)',
       },
       type: 'float',
@@ -1766,7 +1778,7 @@ const templateOptions: OptionsTemplate = {
         de: 'Alarm Lautstärke (0-1)',
         fr: 'Volume de l\'alarme (0-1)',
         ja: '警報音声の音量 (0-1)',
-        cn: '警报提示音的音量 (0-1)',
+        cn: '警报级别提示音的音量 (0-1)',
         ko: '경고 소리 크기 (0-1)',
       },
       type: 'float',
@@ -1779,7 +1791,7 @@ const templateOptions: OptionsTemplate = {
         de: 'Alert Lautstärke (0-1)',
         fr: 'Volume de l\'alerte (0-1)',
         ja: '警告音声の音量 (0-1)',
-        cn: '警告提示音的音量 (0-1)',
+        cn: '警告级别提示音的音量 (0-1)',
         ko: '주의 소리 크기 (0-1)',
       },
       type: 'float',
@@ -1792,7 +1804,7 @@ const templateOptions: OptionsTemplate = {
         de: 'Info Lautstärke (0-1)',
         fr: 'Volume de l\'info (0-1)',
         ja: '情報音声の音量 (0-1)',
-        cn: '信息提示音的音量 (0-1)',
+        cn: '信息级别提示音的音量 (0-1)',
         ko: '안내 소리 크기 (0-1)',
       },
       type: 'float',
@@ -1841,6 +1853,9 @@ const templateOptions: OptionsTemplate = {
       id: 'RumbleEnabled',
       name: {
         en: 'Enable gamepad rumble for triggers',
+        de: 'Gamepad-Vibration für Trigger aktivieren',
+        fr: 'Activer la vibration de la manette de jeu pour les triggers',
+        cn: '触发器活动时使手柄振动',
       },
       type: 'checkbox',
       default: false,
@@ -1849,6 +1864,9 @@ const templateOptions: OptionsTemplate = {
       id: 'InfoRumbleDuration',
       name: {
         en: 'Duration (milliseconds) of rumble for info triggers',
+        de: 'Zeit (in Millisekunden) der Vibration bei info trigger',
+        fr: 'Durée (millisecondes) de la vibration pour les triggers d\'informations',
+        cn: '信息级别触发器振动持续时间 (毫秒)',
       },
       type: 'float',
       default: 400,
@@ -1857,6 +1875,9 @@ const templateOptions: OptionsTemplate = {
       id: 'InfoRumbleWeak',
       name: {
         en: 'Magnitude (0-1) of weak rumble for info triggers',
+        de: 'Stärke (0-1) der leichten Vibration bei info trigger',
+        fr: 'Intensité de la vibration faible pour les triggers d\'informations (0-1)',
+        cn: '信息级别触发器弱电机振动强度 (0-1)',
       },
       type: 'float',
       default: 0.5,
@@ -1865,6 +1886,9 @@ const templateOptions: OptionsTemplate = {
       id: 'InfoRumbleStrong',
       name: {
         en: 'Magnitude (0-1) of strong rumble for info triggers',
+        de: 'Stärke (0-1) der starken Vibration bei info trigger',
+        fr: 'Intensité de la vibration forte pour les triggers d\'informations (0-1)',
+        cn: '信息级别触发器强电机振动强度 (0-1)',
       },
       type: 'float',
       default: 0,
@@ -1873,6 +1897,9 @@ const templateOptions: OptionsTemplate = {
       id: 'AlertRumbleDuration',
       name: {
         en: 'Duration (milliseconds) of rumble for alert triggers',
+        de: 'Zeit (in Millisekunden) der Vibration bei alert trigger',
+        fr: 'Durée (millisecondes) de la vibration pour les triggers d\'alertes',
+        cn: '警告级别触发器振动持续时间 (毫秒)',
       },
       type: 'float',
       default: 500,
@@ -1881,6 +1908,9 @@ const templateOptions: OptionsTemplate = {
       id: 'AlertRumbleWeak',
       name: {
         en: 'Magnitude (0-1) of weak rumble for alert triggers',
+        de: 'Stärke (0-1) der leichten Vibration bei alert trigger',
+        fr: 'Intensité de la vibration faible pour les triggers d\'alertes (0-1)',
+        cn: '警告级别触发器弱电机振动强度 (0-1)',
       },
       type: 'float',
       default: 0,
@@ -1889,6 +1919,9 @@ const templateOptions: OptionsTemplate = {
       id: 'AlertRumbleStrong',
       name: {
         en: 'Magnitude (0-1) of strong rumble for alert triggers',
+        de: 'Stärke (0-1) der starken Vibration bei alert trigger',
+        fr: 'Intensité de la vibration forte pour les triggers d\'alertes (0-1)',
+        cn: '警告级别触发器强电机振动强度 (0-1)',
       },
       type: 'float',
       default: 0.5,
@@ -1897,6 +1930,9 @@ const templateOptions: OptionsTemplate = {
       id: 'AlarmRumbleDuration',
       name: {
         en: 'Duration (milliseconds) of rumble for alarm triggers',
+        de: 'Zeit (in Millisekunden) der Vibration bei alarm trigger',
+        fr: 'Durée (millisecondes) de la vibration pour les triggers d\'alarmes',
+        cn: '警报级别触发器振动持续时间 (毫秒)',
       },
       type: 'float',
       default: 750,
@@ -1905,6 +1941,9 @@ const templateOptions: OptionsTemplate = {
       id: 'AlarmRumbleWeak',
       name: {
         en: 'Magnitude (0-1) of weak rumble for alarm triggers',
+        de: 'Stärke (0-1) der leichten Vibration bei alarm trigger',
+        fr: 'Intensité de la vibration faible pour les triggers d\'alarmes (0-1)',
+        cn: '警报级别触发器弱电机振动强度 (0-1)',
       },
       type: 'float',
       default: 0.75,
@@ -1913,6 +1952,9 @@ const templateOptions: OptionsTemplate = {
       id: 'AlarmRumbleStrong',
       name: {
         en: 'Magnitude (0-1) of strong rumble for alarm triggers',
+        de: 'Stärke (0-1) der starken Vibration bei alarm trigger',
+        fr: 'Intensité de la vibration forte pour les triggers d\'alarmes (0-1)',
+        cn: '警报级别触发器强电机振动强度 (0-1)',
       },
       type: 'float',
       default: 0.75,

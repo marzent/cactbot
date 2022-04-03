@@ -315,6 +315,10 @@ div.justbuffs div#procs-container {
   margin-right: 0;
 }
 
+#pld-stacks-requiescat > div.active {
+  background-color: rgb(25, 156, 255);
+}
+
 #whm-stacks-lily > div.active {
   background-color: rgb(60, 80, 200);
 }
@@ -470,11 +474,10 @@ div.justbuffs div#procs-container {
   top: 146px;
   left: 100px;
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: baseline;
+  flex-flow: row wrap;
+  justify-content: space-around;
+  align-items: flex-start;
   width: 210px;
-  height: 210px;
 }
 
 #procs-container.compact {
@@ -486,6 +489,9 @@ div.justbuffs div#procs-container {
 
   /* every box is 50px big */
   width: 50px;
+
+  /* although the box itself is only 50px, we want a gap of 5px */
+  height: 55px;
 }
 
 /* Colors */
@@ -570,6 +576,18 @@ div.justbuffs div#procs-container {
   background-color: rgb(255, 135, 35);
 }
 
+.pld-color-fightorflight {
+  background-color: rgb(140, 20, 50);
+}
+
+.pld-color-fightorflight.active {
+  background-color: rgb(240, 50, 20);
+}
+
+.pld-color-expiacion {
+  background-color: rgb(140, 60, 200);
+}
+
 /* WAR */
 .war-color-beast {
   background-color: rgb(230, 20, 20);
@@ -583,8 +601,16 @@ div.justbuffs div#procs-container {
   background-color: rgb(255, 153, 0);
 }
 
-.war-color-eye {
-  background-color: rgb(60, 100, 210);
+.war-color-tempest {
+  background-color: rgb(255, 140, 140);
+}
+
+.war-color-upheaval {
+  background-color: rgb(130, 40, 0);
+}
+
+.war-color-innerrelease {
+  background-color: rgb(255, 0, 0);
 }
 
 /* DRK */
@@ -1259,7 +1285,7 @@ div.justbuffs div#procs-container {
 /* Proc box animation */
 .proc-box.in-combat .notify-when-expired.expired {
   display: block;
-  animation: var(--proc-box-notfy-animation, proc-box-flash) var(--proc-box-notify-duration, 1s) var(--proc-box-notify-repeat, infinite);
+  animation: var(--proc-box-notify-animation, proc-box-flash) var(--proc-box-notify-duration, 1s) var(--proc-box-notify-repeat, infinite);
 }
 
 @keyframes proc-box-flash {
