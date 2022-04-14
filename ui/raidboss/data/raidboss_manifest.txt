@@ -355,6 +355,8 @@
 05-shb/trial/wol-ex.txt
 05-shb/ultimate/the_epic_of_alexander.ts
 05-shb/ultimate/the_epic_of_alexander.txt
+06-ew/dungeon/alzadaals_legacy.ts
+06-ew/dungeon/alzadaals_legacy.txt
 06-ew/dungeon/ktisis_hyperboreia.ts
 06-ew/dungeon/ktisis_hyperboreia.txt
 06-ew/dungeon/smileton.ts
@@ -381,12 +383,16 @@
 06-ew/trial/hydaelyn.txt
 06-ew/trial/hydaelyn-ex.ts
 06-ew/trial/hydaelyn-ex.txt
+06-ew/trial/ultima-unreal.ts
+06-ew/trial/ultima-unreal.txt
 06-ew/trial/zodiark.ts
 06-ew/trial/zodiark.txt
 06-ew/trial/zodiark-ex.ts
 06-ew/trial/zodiark-ex.txt
 06-ew/trial/endsinger.ts
 06-ew/trial/endsinger.txt
+06-ew/trial/endsinger-ex.ts
+06-ew/trial/endsinger-ex.txt
 06-ew/raid/p1n.ts
 06-ew/raid/p1n.txt
 06-ew/raid/p2n.ts
