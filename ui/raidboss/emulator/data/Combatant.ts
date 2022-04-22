@@ -74,9 +74,19 @@ export default class Combatant {
   pushPartialState(timestamp: number, props: Partial<CombatantState>): void {
     if (this.states[timestamp] === undefined) {
       // Clone the last state before this timestamp
-      const stateTimestamp = this.significantStates
-        .filter((s) => s < timestamp)
-        .sort((a, b) => b - a)[0] ?? this.significantStates[0];
+      let stateTimestamp = this.significantStates[0] ?? timestamp;
+      // It's faster to start at the last timestamp and work our way backwards
+      // since realistically timestamp skew is only a couple ms at most
+      // Additionally, because cloning a 3000+ element array a few thousand times is slow,
+      // don't for-in over a reverse of the array
+      for (let i = this.significantStates.length - 1; i >= 0; --i) {
+        const ts = this.significantStates[i] ?? 0;
+        if (ts <= timestamp) {
+          stateTimestamp = ts;
+          break;
+        }
+      }
+
       if (stateTimestamp === undefined)
         throw new UnreachableCode();
       const state = this.states[stateTimestamp];
@@ -94,11 +104,19 @@ export default class Combatant {
     const lastSignificantStateTimestamp = this.significantStates[this.significantStates.length - 1];
     if (!lastSignificantStateTimestamp)
       throw new UnreachableCode();
-    const oldStateJSON = JSON.stringify(this.states[lastSignificantStateTimestamp]);
-    const newStateJSON = JSON.stringify(this.states[timestamp]);
+    const oldState = this.states[lastSignificantStateTimestamp];
+    const newState = this.states[timestamp];
+    if (!oldState || !newState)
+      throw new UnreachableCode();
 
-    if (lastSignificantStateTimestamp !== timestamp && newStateJSON !== oldStateJSON)
+    if (
+      lastSignificantStateTimestamp !== timestamp &&
+      oldState.json &&
+      oldState.json !== newState.json
+    ) {
+      delete oldState.json;
       this.significantStates.push(timestamp);
+    }
   }
 
   getState(timestamp: number): CombatantState {
@@ -122,6 +140,14 @@ export default class Combatant {
     }
 
     return this.getStateByIndex(i - 1);
+  }
+
+  finalize(): void {
+    for (const state of Object.values(this.states))
+      delete state.json;
+
+    if (!this.significantStates.includes(this.latestTimestamp))
+      this.significantStates.push(this.latestTimestamp);
   }
 
   // Should only be called when `index` is valid.

@@ -84,9 +84,14 @@ export class Resolver {
   }
 }
 
+export type LineRegExpCache = Map<LineEvent, Map<ProcessedTrigger, RegExpExecArray | false>>;
+
 export default class PopupTextAnalysis extends StubbedPopupText {
   triggerResolvers: Resolver[] = [];
   currentResolver?: Resolver;
+
+  regexCache: LineRegExpCache;
+
   public callback?: (log: LineEvent,
     triggerHelper: EmulatorTriggerHelper | undefined,
     currentTriggerStatus: ResolverStatus,
@@ -97,6 +102,7 @@ export default class PopupTextAnalysis extends StubbedPopupText {
     timelineLoader: TimelineLoader,
     raidbossFileData: RaidbossFileData) {
     super(options, timelineLoader, raidbossFileData);
+    this.regexCache = new Map;
     this.ttsSay = (_text: string) => {
       return;
     };
@@ -121,11 +127,24 @@ export default class PopupTextAnalysis extends StubbedPopupText {
 
   async onEmulatorLog(logs: LineEvent[], getCurrentLogLine: () => LineEvent): Promise<void> {
     for (const logObj of logs) {
-      if (logObj.convertedLine.includes('00:0038:cactbot wipe'))
-        this.SetInCombat(false);
+      if (!this.regexCache.has(logObj))
+        this.regexCache.set(logObj, new Map);
+      const lineCache = this.regexCache.get(logObj);
+      if (!lineCache)
+        continue;
+
+      // Deliberately exclude the check for `cactbot wipe` since that'll never happen here
 
       for (const trigger of this.triggers) {
-        const r = trigger.localRegex?.exec(logObj.convertedLine);
+        const regex = trigger.localRegex;
+        if (!regex)
+          continue;
+
+        let r = lineCache.get(trigger);
+        if (r === undefined) {
+          r = regex.exec(logObj.convertedLine) ?? false;
+          lineCache.set(trigger, r);
+        }
         if (!r)
           continue;
 
@@ -152,7 +171,15 @@ export default class PopupTextAnalysis extends StubbedPopupText {
       }
 
       for (const trigger of this.netTriggers) {
-        const r = trigger.localNetRegex?.exec(logObj.networkLine);
+        const regex = trigger.localNetRegex;
+        if (!regex)
+          continue;
+
+        let r = lineCache.get(trigger);
+        if (r === undefined) {
+          r = regex.exec(logObj.networkLine) ?? false;
+          lineCache.set(trigger, r);
+        }
         if (r) {
           const resolver = this.currentResolver = new Resolver({
             initialData: EmulatorCommon.cloneData(this.data),
@@ -189,11 +216,12 @@ export default class PopupTextAnalysis extends StubbedPopupText {
   }
 
   async checkResolved(logObj: LineEvent): Promise<void> {
-    await Promise.all(
-      this.triggerResolvers.map(async (resolver) => await resolver.isResolved(logObj)))
-      .then((results) => {
-        this.triggerResolvers = this.triggerResolvers.filter((_, index) => !results[index]);
-      });
+    const unresolved: Resolver[] = [];
+    for (const res of this.triggerResolvers) {
+      if (!(await res.isResolved(logObj)))
+        unresolved.push(res);
+    }
+    this.triggerResolvers = unresolved;
   }
 
   override _onTriggerInternalCondition(triggerHelper: EmulatorTriggerHelper): boolean {
