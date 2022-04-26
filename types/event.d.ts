@@ -275,10 +275,6 @@ export interface EventMap {
     type: 'onPlayerDied';
   }) => void;
 
-  'onPartyWipe': (ev: {
-    type: 'onPartyWipe';
-  }) => void;
-
   'onPlayerChangedEvent': (ev: {
     type: 'onPlayerChangedEvent';
     detail: PlayerChangedRet;
@@ -304,7 +300,15 @@ export type LogEvent = {
 
 export type EventType = keyof EventMap;
 
-interface CactbotLoadUserRet {
+interface SystemInfo {
+  cactbotVersion: string;
+  overlayPluginVersion: string;
+  ffxivPluginVersion: string;
+  actVersion: string;
+  gameRegion: 'International' | 'Chinese' | 'Korean';
+}
+
+interface CactbotLoadUserRet extends SystemInfo {
   userLocation: string;
   localUserFiles: { [filename: string]: string } | null;
   parserLanguage: Lang;

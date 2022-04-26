@@ -20,6 +20,7 @@ const data: ZoneInfoType = {
     'contentType': 9,
     'exVersion': 4,
     'name': {
+      'cn': '惊奇百宝城',
       'de': 'Euphoratron',
       'en': 'The Excitatron 6000',
       'fr': 'Le Ludodrome',
@@ -49,6 +50,7 @@ const data: ZoneInfoType = {
     'contentType': 5,
     'exVersion': 4,
     'name': {
+      'cn': '零式万魔殿 边境之狱1',
       'de': 'Asphodelos - Erster Kreis (episch)',
       'en': 'Asphodelos: The First Circle (Savage)',
       'fr': 'Les Limbes du Pandæmonium - Parvis (sadique)',
@@ -78,6 +80,7 @@ const data: ZoneInfoType = {
     'contentType': 5,
     'exVersion': 4,
     'name': {
+      'cn': '零式万魔殿 边境之狱2',
       'de': 'Asphodelos - Zweiter Kreis (episch)',
       'en': 'Asphodelos: The Second Circle (Savage)',
       'fr': 'Les Limbes du Pandæmonium - Cloaque (sadique)',
@@ -107,6 +110,7 @@ const data: ZoneInfoType = {
     'contentType': 5,
     'exVersion': 4,
     'name': {
+      'cn': '零式万魔殿 边境之狱3',
       'de': 'Asphodelos - Dritter Kreis (episch)',
       'en': 'Asphodelos: The Third Circle (Savage)',
       'fr': 'Les Limbes du Pandæmonium - Fournaise (sadique)',
@@ -136,6 +140,7 @@ const data: ZoneInfoType = {
     'contentType': 5,
     'exVersion': 4,
     'name': {
+      'cn': '零式万魔殿 边境之狱4',
       'de': 'Asphodelos - Vierter Kreis (episch)',
       'en': 'Asphodelos: The Fourth Circle (Savage)',
       'fr': 'Les Limbes du Pandæmonium - Abîme (sadique)',
@@ -7888,6 +7893,20 @@ const data: ZoneInfoType = {
       'fr': 'Cale sèche de Castrum Marinum',
       'ja': 'カステッルム・マリヌム・ドライドック',
       'ko': '카스트룸 마리눔 건선거',
+    },
+    'offsetX': -100,
+    'offsetY': -100,
+    'sizeFactor': 400,
+    'weatherRate': 0,
+  },
+  968: {
+    'contentType': 28,
+    'exVersion': 4,
+    'name': {
+      'de': 'Drachenkrieg (fatal)',
+      'en': 'Dragonsong\'s Reprise (Ultimate)',
+      'fr': 'La Guerre du chant des dragons (fatal)',
+      'ja': '絶竜詩戦争',
     },
     'offsetX': -100,
     'offsetY': -100,
