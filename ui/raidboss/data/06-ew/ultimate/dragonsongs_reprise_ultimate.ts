@@ -11,10 +11,9 @@ import { NetMatches } from '../../../../../types/net_matches';
 import { LocaleText, TriggerSet } from '../../../../../types/trigger';
 
 // TODO: Ser Adelphel left/right movement after initial charge
-// TODO: "move" call after you take your Brightwing cleave?
 // TODO: Meteor "run" call?
 
-type Phase = 'doorboss' | 'thordan';
+type Phase = 'doorboss' | 'thordan' | 'nidhogg' | 'haurchefant' | 'thordan2' | 'nidhogg2' | 'dragon-king';
 
 export interface Data extends RaidbossData {
   phase: Phase;
@@ -27,6 +26,7 @@ export interface Data extends RaidbossData {
   thordanJumpCounter?: number;
   thordanDir?: number;
   sanctityWardDir?: string;
+  thordanMeteorMarkers: string[];
   // mapping of player name to 1, 2, 3 dot.
   diveFromGraceNum: { [name: string]: number };
   // mapping of 1, 2, 3 to whether that group has seen an arrow.
@@ -57,10 +57,9 @@ const headmarkers = {
   'dot3': '0141',
 } as const;
 
-const firstMarker: { [phase in Phase]: string } = {
-  'doorboss': headmarkers.hyperdimensionalSlash,
-  'thordan': headmarkers.skywardLeap,
-} as const;
+const firstMarker = (phase: Phase) => {
+  return phase === 'doorboss' ? headmarkers.hyperdimensionalSlash : headmarkers.skywardLeap;
+};
 
 const getHeadmarkerId = (data: Data, matches: NetMatches['HeadMarker'], firstDecimalMarker?: number) => {
   // If we naively just check !data.decOffset and leave it, it breaks if the first marker is 00DA.
@@ -114,6 +113,7 @@ const triggerSet: TriggerSet<Data> = {
     return {
       phase: 'doorboss',
       firstAdelphelJump: true,
+      thordanMeteorMarkers: [],
       diveFromGraceNum: {},
       diveFromGraceHasArrow: { 1: false, 2: false, 3: false },
     };
@@ -124,7 +124,12 @@ const triggerSet: TriggerSet<Data> = {
       type: 'StartsUsing',
       // 62D4 = Holiest of Holy
       // 63C8 = Ascalon's Mercy Concealed
-      netRegex: NetRegexes.startsUsing({ id: ['62D4', '63C8'], capture: true }),
+      // 6708 = Final Chorus
+      // 62E2 = Spear of the Fury
+      // 6B86 = Incarnation
+      // 6667 = unknown_6667
+      // 71E4 = Shockwave
+      netRegex: NetRegexes.startsUsing({ id: ['62D4', '63C8', '6708', '62E2', '6B86', '6667', '7438'], capture: true }),
       run: (data, matches) => {
         switch (matches.id) {
           case '62D4':
@@ -132,6 +137,21 @@ const triggerSet: TriggerSet<Data> = {
             break;
           case '63C8':
             data.phase = 'thordan';
+            break;
+          case '6708':
+            data.phase = 'nidhogg';
+            break;
+          case '62E2':
+            data.phase = 'haurchefant';
+            break;
+          case '6B86':
+            data.phase = 'thordan2';
+            break;
+          case '6667':
+            data.phase = 'nidhogg2';
+            break;
+          case '71E4':
+            data.phase = 'dragon-king';
             break;
         }
       },
@@ -143,7 +163,7 @@ const triggerSet: TriggerSet<Data> = {
       condition: (data) => data.decOffset === undefined,
       // Unconditionally set the first headmarker here so that future triggers are conditional.
       run: (data, matches) => {
-        const firstHeadmarker: number = parseInt(firstMarker[data.phase], 16);
+        const firstHeadmarker: number = parseInt(firstMarker(data.phase), 16);
         getHeadmarkerId(data, matches, firstHeadmarker);
       },
     },
@@ -179,7 +199,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegexCn: NetRegexes.startsUsing({ id: '62DA', source: '圣骑士格里诺', capture: false }),
       netRegexKo: NetRegexes.startsUsing({ id: '62DA', source: '성기사 그리노', capture: false }),
       alertText: (data, _matches, output) => {
-        return data.seenEmptyDimension ? output.in!() : output.inAndTether!();
+        return data.phase !== 'doorboss' || data.seenEmptyDimension ? output.in!() : output.inAndTether!();
       },
       run: (data) => data.seenEmptyDimension = true,
       outputStrings: {
@@ -351,9 +371,19 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Blue X',
           de: 'Blaues X',
           fr: 'Croix bleue',
-          ko: '블루 X징',
+          ko: '파랑 X징',
         },
       },
+    },
+    {
+      id: 'DSR Skyblind',
+      // 631A Skyblind (2.2s cast) is a targetted ground aoe where A65 Skyblind
+      // effect expired on the player.
+      type: 'GainsEffect',
+      netRegex: NetRegexes.gainsEffect({ effectId: 'A65' }),
+      condition: Conditions.targetIsYou(),
+      delaySeconds: (_data, matches) => parseFloat(matches.duration),
+      response: Responses.moveAway(),
     },
     {
       id: 'DSR Ascalon\'s Mercy Concealed',
@@ -378,7 +408,8 @@ const triggerSet: TriggerSet<Data> = {
       netRegexCn: NetRegexes.ability({ id: '63D3', source: '骑神托尔丹', capture: false }),
       netRegexKo: NetRegexes.ability({ id: '63D3', source: '기사신 토르당', capture: false }),
       condition: (data) => data.phase === 'thordan',
-      delaySeconds: 4.5,
+      // It appears that these adds can be in place at ~4.5s, but with latency this may fail for some.
+      delaySeconds: 5,
       promise: async (data) => {
         // Collect Ser Vellguine (3636), Ser Paulecrain (3637), Ser Ignasse (3638) entities
         const vellguineLocaleNames: LocaleText = {
@@ -585,6 +616,7 @@ const triggerSet: TriggerSet<Data> = {
         thordanLocation: {
           en: '${dir} Thordan',
           de: '${dir} Thordan',
+          ja: 'トールダンが${dir}で',
           ko: '토르당 ${dir}',
         },
       },
@@ -696,11 +728,13 @@ const triggerSet: TriggerSet<Data> = {
         clockwise: {
           en: 'Clockwise',
           de: 'Im Uhrzeigersinn',
+          ja: '時計回り',
           ko: '시계방향',
         },
         counterclock: {
           en: 'Counterclockwise',
           de: 'Gegen den Uhrzeigersinn',
+          ja: '反時計回り',
           ko: '반시계방향',
         },
         unknown: Outputs.unknown,
@@ -722,11 +756,13 @@ const triggerSet: TriggerSet<Data> = {
         sword1: {
           en: '1',
           de: '1',
+          ja: '1',
           ko: '1',
         },
         sword2: {
           en: '2',
           de: '2',
+          ja: '2',
           ko: '2',
         },
       },
@@ -748,27 +784,41 @@ const triggerSet: TriggerSet<Data> = {
       type: 'HeadMarker',
       netRegex: NetRegexes.headMarker(),
       condition: (data) => data.phase === 'thordan',
-      suppressSeconds: 1,
       infoText: (data, matches, output) => {
         const id = getHeadmarkerId(data, matches);
         if (id !== headmarkers.meteor)
           return;
-        if (data.party.isDPS(matches.target))
-          return output.dpsMeteors!();
-        return output.tankHealerMeteors!();
+        data.thordanMeteorMarkers.push(matches.target);
+        const [p1, p2] = data.thordanMeteorMarkers.sort();
+        if (data.thordanMeteorMarkers.length !== 2 || p1 === undefined || p2 === undefined)
+          return;
+
+        const p1dps = data.party.isDPS(p1);
+        const p2dps = data.party.isDPS(p2);
+
+        if (p1dps && p2dps)
+          return output.dpsMeteors!({ player1: data.ShortName(p1), player2: data.ShortName(p2) });
+        if (!p1dps && !p2dps)
+          return output.tankHealerMeteors!({ player1: data.ShortName(p1), player2: data.ShortName(p2) });
+        return output.unknownMeteors!({ player1: data.ShortName(p1), player2: data.ShortName(p2) });
       },
       outputStrings: {
         tankHealerMeteors: {
-          en: 'Tank/Healer Meteors',
-          de: 'Tank/Heiler Meteore',
-          fr: 'Météores Tank/Healer',
-          ko: '탱/힐 메테오',
+          en: 'Tank/Healer Meteors (${player1}, ${player2})',
+          de: 'Tank/Heiler Meteore (${player1}, ${player2})', // FIXME
+          fr: 'Météores Tank/Healer (${player1}, ${player2})', // FIXME
+          ja: 'タンヒラ 隕石 (${player1}, ${player2})', // FIXME
+          ko: '탱/힐 메테오 (${player1}, ${player2})', // FIXME
         },
         dpsMeteors: {
-          en: 'DPS Meteors',
-          de: 'DDs Meteore',
-          fr: 'Météores DPS',
-          ko: '딜러 메테오',
+          en: 'DPS Meteors (${player1}, ${player2})',
+          de: 'DDs Meteore (${player1}, ${player2})', // FIXME
+          fr: 'Météores DPS (${player1}, ${player2})', // FIXME
+          ja: 'DPS 隕石 (${player1}, ${player2})', // FIXME
+          ko: '딜러 메테오 (${player1}, ${player2})', // FIXME
+        },
+        unknownMeteors: {
+          en: '??? Meteors (${player1}, ${player2})',
         },
       },
     },
@@ -800,6 +850,8 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Behind => Right',
           de: 'Hinter ihn => Rechts',
+          ja: '後ろ => 右',
+          ko: '뒤 => 오른쪽',
         },
       },
     },
@@ -817,6 +869,8 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Behind => Left',
           de: 'Hinter ihn => Links',
+          ja: '後ろ => 左',
+          ko: '뒤 => 왼쪽',
         },
       },
     },
@@ -879,6 +933,8 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Bait',
           de: 'Ködern',
+          ja: '誘導',
+          ko: '공격 유도',
         },
       },
     },
@@ -956,15 +1012,19 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         circleAllCircles: {
           en: '#${num} All Circles',
+          ko: '#${num} 전부 하이점프',
         },
         circleWithArrows: {
           en: '#${num} Circle (with arrows)',
+          ko: '#${num} 하이점프 (다른사람 화살표)',
         },
         upArrow: {
           en: '#${num} Up Arrow',
+          ko: '#${num} 위 화살표 (척추 강타)',
         },
         downArrow: {
           en: '#${num} Down Arrow',
+          ko: '#${num} 아래 화살표 (교묘한 점프)',
         },
       },
     },
@@ -1212,6 +1272,52 @@ const triggerSet: TriggerSet<Data> = {
         'The Dragon\'s Glory': '邪竜の眼光',
         'The Dragon\'s Rage': '邪竜の魔炎',
         'Ultimate End': 'アルティメットエンド',
+      },
+    },
+    {
+      'locale': 'cn',
+      'missingTranslations': true,
+      'replaceSync': {
+        'King Thordan': '骑神托尔丹',
+        'Nidhogg': '尼德霍格',
+        'Right Eye': '巨龙右眼',
+        'Ser Adelphel': '圣骑士阿代尔斐尔',
+        'Ser Charibert': '圣骑士沙里贝尔',
+        'Ser Grinnaux': '圣骑士格里诺',
+        'Ser Guerrique': '圣骑士盖里克',
+        'Ser Haumeric': '圣骑士奥默里克',
+        'Ser Hermenost': '圣骑士埃尔姆诺斯特',
+        'Ser Ignasse': '圣骑士伊尼亚斯',
+        'Ser Janlenoux': '圣骑士让勒努',
+        'Ser Noudenet': '圣骑士努德内',
+        'Ser Zephirin': '圣骑士泽菲兰',
+      },
+      'replaceText': {
+        'Aetheric Burst': '以太爆发',
+        'The Dragon\'s Gaze': '龙眼之邪',
+      },
+    },
+    {
+      'locale': 'ko',
+      'missingTranslations': true,
+      'replaceSync': {
+        'King Thordan': '기사신 토르당',
+        'Nidhogg': '니드호그',
+        'Right Eye': '용의 오른눈',
+        'Ser Adelphel': '성기사 아델펠',
+        'Ser Charibert': '성기사 샤리베르',
+        'Ser Grinnaux': '성기사 그리노',
+        'Ser Guerrique': '성기사 게리크',
+        'Ser Haumeric': '성기사 오메리크',
+        'Ser Hermenost': '성기사 에르메노',
+        'Ser Ignasse': '성기사 이냐스',
+        'Ser Janlenoux': '성기사 장르누',
+        'Ser Noudenet': '성기사 누데네',
+        'Ser Zephirin': '성기사 제피랭',
+      },
+      'replaceText': {
+        'Aetheric Burst': '에테르 분출',
+        'The Dragon\'s Gaze': '용의 마안',
       },
     },
   ],
