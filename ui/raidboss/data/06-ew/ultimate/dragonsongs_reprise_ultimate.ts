@@ -13,6 +13,8 @@ import { LocaleText, TriggerSet } from '../../../../../types/trigger';
 // TODO: Ser Adelphel left/right movement after initial charge
 // TODO: Meteor "run" call?
 // TODO: Wyrmsbreath 2 cardinal positions for Cauterize and adjust delay
+// TODO: Intercard instead of left/right for Hallowed Wings with Cauterize
+// TODO: Trigger for Hallowed Wings with Hot Tail/Hot Wings
 
 type Phase = 'doorboss' | 'thordan' | 'nidhogg' | 'haurchefant' | 'thordan2' | 'nidhogg2' | 'dragon-king';
 
@@ -193,6 +195,7 @@ const triggerSet: TriggerSet<Data> = {
           en: 'In + Tank Tether',
           de: 'Rein + Tank-Verbindung',
           fr: 'Intérieur + Liens tanks',
+          ja: '中へ + タンク線取り',
           ko: '안으로 + 탱커 선 가로채기',
         },
         in: Outputs.in,
@@ -226,6 +229,7 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Slash on YOU',
           de: 'Schlag auf DIR',
           fr: 'Slash sur VOUS',
+          ja: '自分にハイパーディメンション',
           ko: '고차원 대상자',
         },
       },
@@ -294,8 +298,9 @@ const triggerSet: TriggerSet<Data> = {
         adelphelLocation: {
           en: 'Go ${dir} (knockback)',
           de: 'Geh ${dir} (Rückstoß)',
+          ja: '${dir}へ (ノックバック)',
           cn: '去 ${dir} (击退)',
-          ko: '${dir} (넉백)',
+          ko: '${dir}으로 (넉백)',
         },
       },
     },
@@ -320,25 +325,29 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Red Circle',
           de: 'Roter Kreis',
           fr: 'Cercle rouge',
-          ko: '빨강 원형징',
+          ja: '赤 ○',
+          ko: '빨강 ○',
         },
         triangle: {
           en: 'Green Triangle',
           de: 'Grünes Dreieck',
           fr: 'Triangle vert',
-          ko: '초록 세모징',
+          ja: '緑 △',
+          ko: '초록 △',
         },
         square: {
           en: 'Purple Square',
           de: 'Lilanes Viereck',
           fr: 'Carré violet',
-          ko: '보라 네모징',
+          ja: '紫 ■',
+          ko: '보라 ■',
         },
         x: {
           en: 'Blue X',
           de: 'Blaues X',
           fr: 'Croix bleue',
-          ko: '파랑 X징',
+          ja: '青 Ⅹ',
+          ko: '파랑 Ⅹ',
         },
       },
     },
@@ -560,7 +569,7 @@ const triggerSet: TriggerSet<Data> = {
         thordanLocation: {
           en: '${dir} Thordan',
           de: '${dir} Thordan',
-          ja: 'トールダンが${dir}で',
+          ja: 'トールダン ${dir}',
           ko: '토르당 ${dir}',
         },
       },
@@ -580,6 +589,7 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Leap on YOU',
           de: 'Sprung auf DIR',
           fr: 'Saut sur VOUS',
+          ja: '自分に青マーカー',
           ko: '광역 대상자',
         },
       },
@@ -732,14 +742,14 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Tank/Healer Meteors (${player1}, ${player2})',
           de: 'Tank/Heiler Meteore (${player1}, ${player2})',
           fr: 'Météores Tank/Healer (${player1}, ${player2})', // FIXME
-          ja: 'タンヒラ 隕石 (${player1}, ${player2})', // FIXME
+          ja: 'タンヒラ 隕石 (${player1}, ${player2})',
           ko: '탱/힐 메테오 (${player1}, ${player2})',
         },
         dpsMeteors: {
           en: 'DPS Meteors (${player1}, ${player2})',
           de: 'DDs Meteore (${player1}, ${player2})',
           fr: 'Météores DPS (${player1}, ${player2})', // FIXME
-          ja: 'DPS 隕石 (${player1}, ${player2})', // FIXME
+          ja: 'DPS 隕石 (${player1}, ${player2})',
           ko: '딜러 메테오 (${player1}, ${player2})',
         },
         unknownMeteors: {
@@ -910,22 +920,26 @@ const triggerSet: TriggerSet<Data> = {
         circleAllCircles: {
           en: '#${num} All Circles',
           de: '#${num} Alle Kreise',
-          ko: '#${num} 전부 하이점프',
+          ja: '#${num} みんなハイジャンプ',
+          ko: '#${num} 모두 하이점프',
         },
         circleWithArrows: {
           en: '#${num} Circle (with arrows)',
           de: '#${num} Kreise (mit Pfeilen)',
-          ko: '#${num} 하이점프 (다른사람 화살표)',
+          ja: '#${num} 自分のみハイジャンプ',
+          ko: '#${num} 나만 하이점프',
         },
         upArrow: {
           en: '#${num} Up Arrow',
           de: '#${num} Pfeil nach Vorne',
-          ko: '#${num} 위 화살표 (척추 강타)',
+          ja: '#${num} ↑ / スパインダイブ',
+          ko: '#${num} 위 화살표 / 척추 강타',
         },
         downArrow: {
           en: '#${num} Down Arrow',
           de: '#${num} Pfeil nach Hinten',
-          ko: '#${num} 아래 화살표 (교묘한 점프)',
+          ja: '#${num} ↓ / イルーシヴジャンプ',
+          ko: '#${num} 아래 화살표 / 교묘한 점프',
         },
       },
     },
@@ -958,6 +972,61 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         groups: {
           en: 'Tank Groups',
+          ja: 'タンクと頭割り',
+          ko: '탱커와 그룹 쉐어',
+        },
+      },
+    },
+    {
+      id: 'DSR Hallowed Wings and Plume',
+      // 6D23 Head Down, Left Wing
+      // 6D24 Head Up, Left Wing
+      // 6D26 Head Down, Right Wing
+      // 6D27 Head Up, Right Wing
+      // Head Up = Tanks Far
+      // Head Down = Tanks Near
+      type: 'StartsUsing',
+      netRegex: NetRegexes.startsUsing({ id: ['6D23', '6D24', '6D26', '6D27'], source: 'Hraesvelgr' }),
+      alertText: (data, matches, output) => {
+        let head;
+        let wings;
+        switch (matches.id) {
+          case '6D23':
+            wings = output.right!();
+            head = data.role === 'tank' ? output.near!() : output.far!();
+            break;
+          case '6D24':
+            wings = output.right!();
+            head = data.role === 'tank' ? output.far!() : output.near!();
+            break;
+          case '6D26':
+            wings = output.left!();
+            head = data.role === 'tank' ? output.near!() : output.far!();
+            break;
+          case '6D27':
+            wings = output.left!();
+            head = data.role === 'tank' ? output.far!() : output.near!();
+            break;
+        }
+        return output.text!({ wings: wings, head: head });
+      },
+      outputStrings: {
+        left: Outputs.left,
+        right: Outputs.right,
+        near: {
+          en: 'Near Hraesvelgr (Tankbusters)',
+          ja: 'フレースヴェルグに近づく (タンクバスター)',
+          ko: '흐레스벨그 부근으로 (탱버)',
+        },
+        far: {
+          en: 'Far from Hraesvelgr (Tankbusters)',
+          ja: 'フレースヴェルグから離れる (タンクバスター)',
+          ko: '흐레스벨그와 멀어지기 (탱버)',
+        },
+        text: {
+          en: '${wings}, ${head}',
+          ja: '${wings}, ${head}',
+          ko: '${wings}, ${head}',
         },
       },
     },
@@ -980,10 +1049,12 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         nidhogg: {
           en: 'Get hit by Nidhogg',
+          ja: 'ニーズヘッグに当たる',
           ko: '니드호그에게 맞기',
         },
         hraesvelgr: {
           en: 'Get hit by Hraesvelgr',
+          ja: 'フレースヴェルグに当たる',
           ko: '흐레스벨그에게 맞기',
         },
       },
