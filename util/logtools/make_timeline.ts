@@ -9,6 +9,7 @@ import SFuncs from '../../resources/stringhandlers';
 import { NetMatches } from '../../types/net_matches';
 
 import { LogUtilArgParse, TimelineArgs } from './arg_parser';
+import { printCollectedFights, printCollectedZones } from './encounter_printer';
 import { EncounterCollector, FightEncInfo, TLFuncs } from './encounter_tools';
 
 // TODO: Add support for auto-commenting repeated abilities
@@ -58,7 +59,6 @@ class ExtendedArgsNamespace extends Namespace implements ExtendedArgs {
   'search_zones': number | null;
   'fight_regex': string | null;
   'zone_regex': string | null;
-  'adjust': number | null;
   'output_file': string | null;
   'start': string | null;
   'end': string | null;
@@ -456,11 +456,11 @@ const makeTimeline = async () => {
     const store = (args.search_fights !== null && (args.search_fights > 0));
     const collector = await makeCollectorFromPrepass(args.file, store);
     if (args['search_fights'] === -1) {
-      TLFuncs.printCollectedFights(collector);
+      printCollectedFights(collector);
       process.exit(0);
     }
     if (args.search_zones === -1) {
-      TLFuncs.printCollectedZones(collector);
+      printCollectedZones(collector);
       process.exit(0);
     }
     // All fights are 1-indexed on collectors,
