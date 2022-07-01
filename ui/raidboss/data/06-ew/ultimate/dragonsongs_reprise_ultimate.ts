@@ -55,7 +55,10 @@ export interface Data extends RaidbossData {
   deathMarker: { [name: string]: PlaystationMarker };
   addsPhaseNidhoggId?: string;
   hraesvelgrGlowing?: boolean;
+  nidhoggGlowing?: boolean;
   hallowedWingsCount: number;
+  spreadingFlame: string[];
+  entangledFlame: string[];
 }
 
 // Due to changes introduced in patch 5.2, overhead markers now have a random offset
@@ -171,6 +174,8 @@ const triggerSet: TriggerSet<Data> = {
       hasDoom: {},
       deathMarker: {},
       hallowedWingsCount: 0,
+      spreadingFlame: [],
+      entangledFlame: [],
     };
   },
   timelineTriggers: [
@@ -2014,22 +2019,20 @@ const triggerSet: TriggerSet<Data> = {
       id: 'DSR Great Wyrmsbreath Hraesvelgr Not Glowing',
       type: 'StartsUsing',
       netRegex: NetRegexes.startsUsing({ id: '6D34', source: 'Hraesvelgr', capture: false }),
-      alertText: (data, _matches, output) => {
+      response: (data, _matches, output) => {
+        // cactbot-builtin-response
+        output.responseOutputStrings = {
+          tanksApart: {
+            en: 'Apart (Hrae buster)',
+          },
+          hraesvelgrTankbuster: {
+            en: 'Hrae Tankbuster',
+          },
+        };
+
         if (data.role === 'tank')
-          return output.tanksApart!();
-      },
-      infoText: (data, _matches, output) => {
-        if (data.role !== 'tank')
-          return output.hraesvelgrTankbuster!();
-      },
-      run: (data) => data.hraesvelgrGlowing = false,
-      outputStrings: {
-        tanksApart: {
-          en: 'Apart (Hrae buster)',
-        },
-        hraesvelgrTankbuster: {
-          en: 'Hrae Tankbuster',
-        },
+          return { alertText: output.tanksApart!() };
+        return { infoText: output.hraesvelgrTankbuster!() };
       },
     },
     {
@@ -2043,23 +2046,28 @@ const triggerSet: TriggerSet<Data> = {
       id: 'DSR Great Wyrmsbreath Nidhogg Not Glowing',
       type: 'StartsUsing',
       netRegex: NetRegexes.startsUsing({ id: '6D32', source: 'Nidhogg', capture: false }),
-      alertText: (data, _matches, output) => {
+      response: (data, _matches, output) => {
+        // cactbot-builtin-response
+        output.responseOutputStrings = {
+          tanksApart: {
+            en: 'Apart (Nid buster)',
+          },
+          nidTankbuster: {
+            en: 'Nid Tankbuster',
+          },
+        };
+
         if (data.role === 'tank')
-          return output.tanksApart!();
+          return { alertText: output.tanksApart!() };
+        return { infoText: output.nidTankbuster!() };
       },
-      infoText: (data, _matches, output) => {
-        if (data.role !== 'tank')
-          return output.hraesvelgrTankbuster!();
-      },
-      run: (data) => data.hraesvelgrGlowing = false,
-      outputStrings: {
-        tanksApart: {
-          en: 'Apart (Nid buster)',
-        },
-        hraesvelgrTankbuster: {
-          en: 'Nid Tankbuster',
-        },
-      },
+    },
+    {
+      id: 'DSR Great Wyrmsbreath Nidhogg Glowing',
+      type: 'StartsUsing',
+      netRegex: NetRegexes.startsUsing({ id: '6D33', source: 'Nidhogg', capture: false }),
+      condition: (data) => data.role === 'tank',
+      run: (data) => data.nidhoggGlowing = true,
     },
     {
       // Great Wyrmsbreath ids
@@ -2067,24 +2075,29 @@ const triggerSet: TriggerSet<Data> = {
       //   6D33 Nidhogg glowing
       //   6D34 Hraesvelgr not glowing
       //   6D35 Hraesvelgr glowing
-      // Hraesvelgr always comes first, so set `hraesvelgrGlowing` in Hrae lines and
-      // unset it after any Nidhogg lines.
-      id: 'DSR Great Wyrmsbreath Nidhogg Glowing',
+      // Hraesvelger and Nidhogg are different actors so can go in either order.
+      id: 'DSR Great Wyrmsbreath Both Glowing',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '6D33', source: 'Nidhogg', capture: false }),
-      alertText: (data, _matches, output) => {
-        if (data.hraesvelgrGlowing && data.role === 'tank')
-          return output.sharedBuster!();
+      netRegex: NetRegexes.startsUsing({ id: ['6D33', '6D35'], source: ['Hraesvelgr', 'Nidhogg'], capture: false }),
+      delaySeconds: 0.3,
+      suppressSeconds: 1,
+      response: (data, _matches, output) => {
+        // cactbot-builtin-response
+        output.responseOutputStrings = {
+          sharedBuster: {
+            en: 'Shared Buster',
+          },
+        };
+
+        if (!data.hraesvelgrGlowing || !data.nidhoggGlowing)
+          return;
+        if (data.role === 'tank')
+          return { alertText: output.sharedBuster!() };
+        return { infoText: output.sharedBuster!() };
       },
-      infoText: (data, _matches, output) => {
-        if (data.hraesvelgrGlowing && data.role !== 'tank')
-          return output.sharedBuster!();
-      },
-      run: (data) => delete data.hraesvelgrGlowing,
-      outputStrings: {
-        sharedBuster: {
-          en: 'Shared Buster',
-        },
+      run: (data) => {
+        delete data.hraesvelgrGlowing;
+        delete data.nidhoggGlowing;
       },
     },
     {
@@ -2294,30 +2307,42 @@ const triggerSet: TriggerSet<Data> = {
       },
     },
     {
-      id: 'DSR Spreading Flame',
+      id: 'DSR Spreading/Entangled Flame',
       type: 'GainsEffect',
-      netRegex: NetRegexes.gainsEffect({ effectId: 'AC6' }),
-      condition: (data, matches) => data.me === matches.target,
-      infoText: (_data, _matches, output) => output.text!(),
+      netRegex: NetRegexes.gainsEffect({ effectId: ['AC6', 'AC7'] }),
+      preRun: (data, matches) => {
+        if (matches.effectId === 'AC6')
+          data.spreadingFlame.push(matches.target);
+
+        if (matches.effectId === 'AC7')
+          data.entangledFlame.push(matches.target);
+      },
+      infoText: (data, _matches, output) => {
+        if (data.spreadingFlame.length < 4)
+          return;
+        if (data.entangledFlame.length < 2)
+          return;
+
+        if (data.spreadingFlame.includes(data.me))
+          return output.spread!();
+        if (data.entangledFlame.includes(data.me))
+          return output.stack!();
+        return output.nodebuff!();
+      },
       outputStrings: {
-        text: {
+        spread: {
           en: 'Spread',
           de: 'Verteilen',
           ko: '산개징 대상자',
         },
-      },
-    },
-    {
-      id: 'DSR Entangled Flame',
-      type: 'GainsEffect',
-      netRegex: NetRegexes.gainsEffect({ effectId: 'AC7' }),
-      condition: (data, matches) => data.me === matches.target,
-      infoText: (_data, _matches, output) => output.text!(),
-      outputStrings: {
-        text: {
+        stack: {
           en: 'Stack',
           de: 'Sammeln',
           ko: '쉐어징 대상자',
+        },
+        nodebuff: {
+          en: 'No debuff (Stack)',
+          ko: '무징 (쉐어)',
         },
       },
     },
