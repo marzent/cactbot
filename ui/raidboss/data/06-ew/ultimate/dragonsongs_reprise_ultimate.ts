@@ -13,11 +13,13 @@ import { LocaleObject, LocaleText, TriggerSet } from '../../../../../types/trigg
 // TODO: Ser Adelphel left/right movement after initial charge
 // TODO: Meteor "run" call?
 // TODO: Wyrmsbreath 2 cardinal positions for Cauterize and adjust delay
-// TODO: Intercard instead of left/right for Hallowed Wings with Cauterize
 // TODO: Trigger for Hallowed Wings with Hot Tail/Hot Wings
 // TODO: Phase 6 Resentment callout?
 
 type Phase = 'doorboss' | 'thordan' | 'nidhogg' | 'haurchefant' | 'thordan2' | 'nidhogg2' | 'dragon-king';
+
+const playstationMarkers = ['circle', 'cross', 'triangle', 'square'] as const;
+type PlaystationMarker = typeof playstationMarkers[number];
 
 export interface Data extends RaidbossData {
   combatantData: PluginCombatantState[];
@@ -50,7 +52,10 @@ export interface Data extends RaidbossData {
   // names of players with chain lightning during wrath.
   thunderstruck: string[];
   hasDoom: { [name: string]: boolean };
+  deathMarker: { [name: string]: PlaystationMarker };
+  addsPhaseNidhoggId?: string;
   hraesvelgrGlowing?: boolean;
+  hallowedWingsCount: number;
 }
 
 // Due to changes introduced in patch 5.2, overhead markers now have a random offset
@@ -79,6 +84,20 @@ const headmarkers = {
   'skywardSingle': '000E',
   // vfx/lockon/eff/bahamut_wyvn_glider_target_02tm.avfx
   'cauterize': '0014',
+} as const;
+
+const playstationHeadmarkerIds: readonly string[] = [
+  headmarkers.firechainCircle,
+  headmarkers.firechainTriangle,
+  headmarkers.firechainSquare,
+  headmarkers.firechainX,
+] as const;
+
+const playstationMarkerMap: { [id: string]: PlaystationMarker } = {
+  [headmarkers.firechainCircle]: 'circle',
+  [headmarkers.firechainTriangle]: 'triangle',
+  [headmarkers.firechainSquare]: 'square',
+  [headmarkers.firechainX]: 'cross',
 } as const;
 
 const firstMarker = (phase: Phase) => {
@@ -150,6 +169,8 @@ const triggerSet: TriggerSet<Data> = {
       diveCounter: 1,
       thunderstruck: [],
       hasDoom: {},
+      deathMarker: {},
+      hallowedWingsCount: 0,
     };
   },
   timelineTriggers: [
@@ -1775,33 +1796,42 @@ const triggerSet: TriggerSet<Data> = {
       id: 'DSR Playstation2 Fire Chains',
       type: 'HeadMarker',
       netRegex: NetRegexes.headMarker(),
-      condition: (data, matches) => data.phase === 'thordan2' && data.me === matches.target,
+      condition: (data) => data.phase === 'thordan2',
       alertText: (data, matches, output) => {
         const id = getHeadmarkerId(data, matches);
+        const marker = playstationMarkerMap[id];
+        if (marker === undefined)
+          return;
+
+        data.deathMarker[matches.target] = marker;
+
+        if (data.me !== matches.target)
+          return;
 
         // Note: in general, both circles should always have Doom and both crosses
-        // should not have Doom, but who knows what happens if there's people dead.
-        // For example, in P1 tanks can get circles if enough people are dead.
+        // should not have Doom.  If one doom dies, it seems that crosses are
+        // removed and there's a double triangle non-doom.  If enough people die,
+        // anything can happen.  For example, in P1 tanks can get circles if enough people are dead.
 
-        const hasDoom = data.hasDoom[data.me];
-        if (hasDoom) {
-          if (id === headmarkers.firechainCircle)
+        if (data.hasDoom[data.me]) {
+          if (marker === 'circle')
             return output.circleWithDoom!();
-          if (id === headmarkers.firechainTriangle)
+          else if (marker === 'triangle')
             return output.triangleWithDoom!();
-          if (id === headmarkers.firechainSquare)
+          else if (marker === 'square')
             return output.squareWithDoom!();
-          if (id === headmarkers.firechainX)
+          else if (marker === 'cross')
             return output.crossWithDoom!();
+        } else {
+          if (marker === 'circle')
+            return output.circle!();
+          else if (marker === 'triangle')
+            return output.triangle!();
+          else if (marker === 'square')
+            return output.square!();
+          else if (marker === 'cross')
+            return output.cross!();
         }
-        if (id === headmarkers.firechainCircle)
-          return output.circle!();
-        if (id === headmarkers.firechainTriangle)
-          return output.triangle!();
-        if (id === headmarkers.firechainSquare)
-          return output.square!();
-        if (id === headmarkers.firechainX)
-          return output.cross!();
       },
       outputStrings: {
         circle: {
@@ -1847,6 +1877,136 @@ const triggerSet: TriggerSet<Data> = {
         crossWithDoom: {
           en: 'Blue X (Doom)',
           ko: '파랑 X (선고)',
+        },
+      },
+    },
+    {
+      // If one doom person dies, then there will be an unmarked non-doom player (cross)
+      // and two non-doom players who will get the same symbol (triangle OR square).
+      // If there's more than two symbols missing this is probably a wipe,
+      // so don't bother trying to call out "unmarked circle or square".
+      // TODO: should we run this on Playstation1 as well (and consolidate triggers?)
+      id: 'DSR Playstation2 Fire Chains No Marker',
+      type: 'HeadMarker',
+      netRegex: NetRegexes.headMarker(),
+      condition: (data, matches) => data.phase === 'thordan2' && playstationHeadmarkerIds.includes(getHeadmarkerId(data, matches)),
+      delaySeconds: 0.5,
+      suppressSeconds: 5,
+      alarmText: (data, _matches, output) => {
+        if (data.deathMarker[data.me] !== undefined)
+          return;
+
+        const seenMarkers = Object.values(data.deathMarker);
+        const markers = [...playstationMarkers].filter((x) => !seenMarkers.includes(x));
+
+        const [marker] = markers;
+        if (marker === undefined || markers.length !== 1)
+          return;
+
+        // Note: this will still call out for the dead doom person, but it seems better
+        // in case they somehow got insta-raised.
+        if (data.hasDoom[data.me]) {
+          if (marker === 'circle')
+            return output.circleWithDoom!();
+          else if (marker === 'triangle')
+            return output.triangleWithDoom!();
+          else if (marker === 'square')
+            return output.squareWithDoom!();
+          else if (marker === 'cross')
+            return output.crossWithDoom!();
+        } else {
+          if (marker === 'circle')
+            return output.circle!();
+          else if (marker === 'triangle')
+            return output.triangle!();
+          else if (marker === 'square')
+            return output.square!();
+          else if (marker === 'cross')
+            return output.cross!();
+        }
+      },
+      outputStrings: {
+        circle: {
+          en: 'Unmarked Red Circle',
+        },
+        triangle: {
+          en: 'Unmarked Green Triangle',
+        },
+        square: {
+          en: 'Unmarked Purple Square',
+        },
+        cross: {
+          en: 'Unmarked Blue X',
+        },
+        circleWithDoom: {
+          en: 'Unmarked Red Circle (Doom)',
+        },
+        triangleWithDoom: {
+          en: 'Unmarked Green Triangle (Doom)',
+        },
+        squareWithDoom: {
+          en: 'Unmarked Purple Square (Doom)',
+        },
+        crossWithDoom: {
+          en: 'Unmarked Blue X (Doom)',
+        },
+      },
+    },
+    {
+      // This will only fire if you got a marker, so that it's mutually exclusive
+      // with the "No Marker" trigger above.
+      id: 'DSR Playstation2 Fire Chains Unexpected Pair',
+      type: 'HeadMarker',
+      netRegex: NetRegexes.headMarker(),
+      condition: (data, matches) => {
+        if (data.phase !== 'thordan2')
+          return false;
+        if (data.me !== matches.target)
+          return false;
+        return playstationHeadmarkerIds.includes(getHeadmarkerId(data, matches));
+      },
+      delaySeconds: 0.5,
+      alarmText: (data, matches, output) => {
+        const id = getHeadmarkerId(data, matches);
+        const myMarker = playstationMarkerMap[id];
+        if (myMarker === undefined)
+          return;
+
+        // Find person with the same mark.
+        let partner: string | undefined = undefined;
+        for (const [player, marker] of Object.entries(data.deathMarker)) {
+          if (player !== data.me && marker === myMarker) {
+            partner = player;
+            break;
+          }
+        }
+        if (partner === undefined)
+          return;
+
+        // If a circle ends up with a non-doom or a cross ends up with a doom,
+        // I think you're in serious unrecoverable trouble.  These people also
+        // already need to look and adjust to the other person, vs the triangle
+        // and square which can have a fixed position based on doom vs non-doom.
+        if (myMarker === 'circle' || myMarker === 'cross')
+          return;
+
+        // I think circles fill out with doom first, so it should be impossible
+        // to have two doom triangles or two doom squares as well.
+        if (data.hasDoom[data.me] || data.hasDoom[partner])
+          return;
+
+        if (myMarker === 'triangle')
+          return output.doubleTriangle!({ player: data.ShortName(partner) });
+        if (myMarker === 'square')
+          return output.doubleSquare!({ player: data.ShortName(partner) });
+      },
+      outputStrings: {
+        // In case users want to have triangle vs square say something different.
+        doubleTriangle: {
+          en: 'Double Non-Doom (${player})',
+        },
+        doubleSquare: {
+          en: 'Double Non-Doom (${player})',
         },
       },
     },
@@ -1931,19 +2091,28 @@ const triggerSet: TriggerSet<Data> = {
       id: 'DSR Akh Afah',
       // 6D41 Akh Afah from Hraesvelgr, and 64D2 is immediately after
       // 6D43 Akh Afah from Nidhogg, and 6D44 is immediately after
-      // Hits highest emnity target
+      // Hits the two healers.  If a healer is dead, then the target is random.
       type: 'StartsUsing',
       netRegex: NetRegexes.startsUsing({ id: ['6D41', '6D43'], source: ['Hraesvelgr', 'Nidhogg'], capture: false }),
       suppressSeconds: 2,
-      infoText: (_data, _matches, output) => output.groups!(),
+      alertText: (_data, _matches, output) => output.groups!(),
       outputStrings: {
         groups: {
-          en: 'Tank Groups',
-          de: 'Tank Gruppen',
-          ja: 'タンクと頭割り',
-          ko: '탱커와 그룹 쉐어',
+          en: 'Healer Groups',
+          de: 'Heiler-Gruppen',
+          fr: 'Groupes sur les heals',
+          ja: 'ヒラに頭割り',
+          cn: '与治疗分摊',
+          ko: '힐러 그룹 쉐어',
         },
       },
+    },
+    {
+      id: 'DSR Adds Phase Nidhogg',
+      type: 'AddedCombatant',
+      // There are many Nidhoggs, but the real one (and the one that moves for cauterize) is npcBaseId=12612.
+      netRegex: NetRegexes.addedCombatantFull({ npcNameId: '3458', npcBaseId: '12612' }),
+      run: (data, matches) => data.addsPhaseNidhoggId = matches.id,
     },
     {
       id: 'DSR Hallowed Wings and Plume',
@@ -1956,50 +2125,116 @@ const triggerSet: TriggerSet<Data> = {
       // Head Down = Tanks Near
       type: 'StartsUsing',
       netRegex: NetRegexes.startsUsing({ id: ['6D23', '6D24', '6D26', '6D27'], source: 'Hraesvelgr' }),
+      preRun: (data) => data.hallowedWingsCount++,
       durationSeconds: 6,
+      promise: async (data) => {
+        data.combatantData = [];
+
+        // TODO: implement Hot Tail/Hot Wing combination here
+        if (data.hallowedWingsCount !== 1)
+          return;
+
+        // If we have missed the Nidhogg id (somehow?), we'll handle it later.
+        const id = data.addsPhaseNidhoggId;
+        if (id === undefined)
+          return;
+
+        data.combatantData = (await callOverlayHandler({
+          call: 'getCombatants',
+          ids: [parseInt(id, 16)],
+        })).combatants;
+
+        if (data.combatantData.length === 0)
+          console.error(`Hallowed: no Nidhoggs found`);
+        else if (data.combatantData.length > 1)
+          console.error(`Hallowed: unexpected number of Nidhoggs: ${JSON.stringify(data.combatantData)}`);
+      },
       alertText: (data, matches, output) => {
+        const wings = (matches.id === '6D23' || matches.id === '6D24') ? output.left!() : output.right!();
         let head;
-        let wings;
-        switch (matches.id) {
-          case '6D23':
-            wings = output.left!();
-            head = data.role === 'tank' ? output.near!() : output.far!();
-            break;
-          case '6D24':
-            wings = output.left!();
-            head = data.role === 'tank' ? output.far!() : output.near!();
-            break;
-          case '6D26':
-            wings = output.right!();
-            head = data.role === 'tank' ? output.near!() : output.far!();
-            break;
-          case '6D27':
-            wings = output.right!();
-            head = data.role === 'tank' ? output.far!() : output.near!();
-            break;
+        const isHeadDown = matches.id === '6D23' || matches.id === '6D26';
+        if (isHeadDown)
+          head = data.role === 'tank' ? output.tanksNear!() : output.partyFar!();
+        else
+          head = data.role === 'tank' ? output.tanksFar!() : output.partyNear!();
+
+        const [nidhogg] = data.combatantData;
+        if (nidhogg !== undefined && data.combatantData.length === 1) {
+          // Nidhogg is at x = 100 +/- 11, y = 100 +/- 34
+          const dive = nidhogg.PosX < 100 ? output.forward!() : output.backward!();
+          return output.wingsDiveHead!({ wings: wings, dive: dive, head: head });
         }
-        return output.text!({ wings: wings, head: head });
+
+        // If something has gone awry (or this is the second hallowed), call out what we can.
+        return output.wingsHead!({ wings: wings, head: head });
       },
       outputStrings: {
+        // The calls here assume that all players are looking at Hraesvelgr, and thus
+        // "Forward" means east and "Backward" means west, and "Left" means
+        // north and "Right" means south.  The cactbot UI could rename them if this
+        // wording is awkward to some people.
+        //
+        // Also, in case somebody is raid calling, differentiate "Party Near" vs "Tanks Near".
+        // This will also help in a rare edge case bug where sometimes people don't have the
+        // right job, see: https://github.com/quisquous/cactbot/issues/4237.
+        //
+        // Yes, these are also tank busters, but there's too many things to call out here,
+        // and this is a case of "tanks and healers need to know what's going on ahead of time".
         left: Outputs.left,
         right: Outputs.right,
-        near: {
-          en: 'Near Hraesvelgr (Tankbusters)',
-          de: 'Nahe Hraesvelgr (Tankbuster)',
-          ja: 'フレースヴェルグに近づく (タンクバスター)',
-          ko: '흐레스벨그 부근으로 (탱버)',
+        forward: {
+          en: 'Forward',
         },
-        far: {
-          en: 'Far from Hraesvelgr (Tankbusters)',
-          de: 'Weit weg von Hraesvelgr (Tankbusters)',
-          ja: 'フレースヴェルグから離れる (タンクバスター)',
-          ko: '흐레스벨그와 멀어지기 (탱버)',
+        backward: {
+          en: 'Backward',
         },
-        text: {
+        partyNear: {
+          en: 'Party Near',
+        },
+        tanksNear: {
+          en: 'Tanks Near',
+        },
+        partyFar: {
+          en: 'Party Far',
+        },
+        tanksFar: {
+          en: 'Tanks Far',
+        },
+        wingsHead: {
           en: '${wings}, ${head}',
           de: '${wings}, ${head}',
           ja: '${wings}, ${head}',
           ko: '${wings}, ${head}',
+        },
+        wingsDiveHead: {
+          en: '${wings} + ${dive}, ${head}',
+          de: '${wings} + ${dive}, ${head}',
+          ja: '${wings} + ${dive}, ${head}',
+          ko: '${wings} + ${dive}, ${head}',
+        },
+      },
+    },
+    {
+      id: 'DSR Nidhogg Hot Wing',
+      type: 'StartsUsing',
+      netRegex: NetRegexes.startsUsing({ id: '6D2B', source: 'Nidhogg', capture: false }),
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: {
+          // Often cactbot uses "in" and "out", but that's usually hitbox relative vs
+          // anything else.  Because this is more arena-relative.
+          en: 'Inside',
+        },
+      },
+    },
+    {
+      id: 'DSR Nidhogg Hot Tail',
+      type: 'StartsUsing',
+      netRegex: NetRegexes.startsUsing({ id: '6D2D', source: 'Nidhogg', capture: false }),
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: {
+          en: 'Outside',
         },
       },
     },
