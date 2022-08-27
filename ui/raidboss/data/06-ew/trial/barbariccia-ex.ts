@@ -1,33 +1,37 @@
 import Conditions from '../../../../../resources/conditions';
 import NetRegexes from '../../../../../resources/netregexes';
+import Outputs from '../../../../../resources/outputs';
 import { Responses } from '../../../../../resources/responses';
 import ZoneId from '../../../../../resources/zone_id';
 import { RaidbossData } from '../../../../../types/data';
 import { TriggerSet } from '../../../../../types/trigger';
 
-export type Data = RaidbossData;
-
-// TODO: Add In=>Spread or Wall (+cardinal?)=>Spread callout to Hair Spray (note this is cast at other phases)
-// TODO: Add In=>Healer Groups, or Wall (+cardinal?)=>Healer Groups to Deadly Twist
-// TODO: Verify Playstation Marker Ids match: 016F (circle), 0170 (triangle), 0171 (square), 0172 (cross)
-// TODO: Stack callout for the healer that gets stackmarker in phase 2?
-// TODO: Call out a move for the player with Brutal Rush tether to avoid the Gust?
+export interface Data extends RaidbossData {
+  boldBoulderTargets: string[];
+  hairFlayUpbraidTargets: string[];
+}
 
 const triggerSet: TriggerSet<Data> = {
   zoneId: ZoneId.StormsCrownExtreme,
   timelineFile: 'barbariccia-ex.txt',
+  initData: () => {
+    return {
+      boldBoulderTargets: [],
+      hairFlayUpbraidTargets: [],
+    };
+  },
   timelineTriggers: [
     {
       id: 'BarbaricciaEx Knuckle Drum',
       regex: /Knuckle Drum/,
       beforeSeconds: 5,
-      response: Responses.aoe(),
+      response: Responses.bigAoe(),
     },
     {
-      id: 'BarbaricciaEx Impact',
-      regex: /Impact/,
+      id: 'BarbaricciaEx Blow Away',
+      regex: /Blow Away/,
       beforeSeconds: 5,
-      response: Responses.knockback(),
+      response: Responses.getTogether('info'),
     },
   ],
   triggers: [
@@ -38,24 +42,64 @@ const triggerSet: TriggerSet<Data> = {
       response: Responses.aoe(),
     },
     {
-      id: 'BarbaricciaEx Hair Spray',
+      // Savage Barbery has 3 casts that all start at the same time.
+      // 5.7 duration: 7464, 7465, 7466, 7489, 748B, 7573 (all actual cast bar, unknown how to differentiate)
+      // 6.7 duration: 7574 (donut), 757A (line)
+      // 8.8 duration: 7575 (out, paired with donut), 757B (out, paired with line)
+      id: 'BarbaricciaEx Savage Barbery Donut',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '75A6', source: 'Barbariccia' }),
-      condition: Conditions.targetIsYou(),
-      infoText: (_data, _matches, output) => output.text!(),
+      netRegex: NetRegexes.startsUsing({ id: '7574', source: 'Barbariccia', capture: false }),
+      response: Responses.getIn(),
+    },
+    {
+      id: 'BarbaricciaEx Savage Barbery Line',
+      type: 'StartsUsing',
+      netRegex: NetRegexes.startsUsing({ id: '757A', source: 'Barbariccia', capture: false }),
+      alertText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
-          en: 'In/Wall => Spread',
-          cn: '靠近BOSS分散',
+          en: 'Out and Away',
         },
       },
+    },
+    {
+      // Hair Raid has 2 casts that start at the same time, then a slight delay for stack/spread.
+      // 5.7 duration: 757C (wall), 757E (donut)
+      // 7.7 duration: 757D (paired with wall), 757F (paired with donut)
+      //
+      // ~2.2s delay, and then:
+      // 7.7 duration (Hair Spray): 75A6
+      // 7.7 duration (Deadly Twist): 75A7
+      id: 'BarbaricciaEx Hair Raid Donut',
+      type: 'StartsUsing',
+      netRegex: NetRegexes.startsUsing({ id: '757E', source: 'Barbariccia', capture: false }),
+      response: Responses.getIn(),
+    },
+    {
+      id: 'BarbaricciaEx Hair Raid Wall',
+      type: 'StartsUsing',
+      netRegex: NetRegexes.startsUsing({ id: '757C', source: 'Barbariccia', capture: false }),
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: {
+          en: 'Wall',
+        },
+      },
+    },
+    {
+      id: 'BarbaricciaEx Hair Spray',
+      type: 'StartsUsing',
+      // This spread mechanic is used later in other phases of the fight as well.
+      netRegex: NetRegexes.startsUsing({ id: '75A6', source: 'Barbariccia', capture: false }),
+      suppressSeconds: 1,
+      response: Responses.spread(),
     },
     {
       id: 'BarbaricciaEx Deadly Twist',
       type: 'StartsUsing',
       netRegex: NetRegexes.startsUsing({ id: '75A7', source: 'Barbariccia', capture: false }),
       suppressSeconds: 2,
-      alertText: (_data, _matches, output) => output.groups!(),
+      infoText: (_data, _matches, output) => output.groups!(),
       outputStrings: {
         groups: {
           en: 'Healer Groups',
@@ -72,13 +116,14 @@ const triggerSet: TriggerSet<Data> = {
       type: 'StartsUsing',
       netRegex: NetRegexes.startsUsing({ id: '7571', source: 'Barbariccia' }),
       condition: Conditions.caresAboutPhysical(),
-      response: Responses.tankBuster(),
+      response: Responses.tankBusterSwap(),
     },
     {
       id: 'BarbaricciaEx Secret Breeze',
       type: 'StartsUsing',
       netRegex: NetRegexes.startsUsing({ id: '7580', source: 'Barbariccia', capture: false }),
-      infoText: (_data, _matches, output) => output.protean!(),
+      durationSeconds: 3,
+      alertText: (_data, _matches, output) => output.protean!(),
       outputStrings: {
         protean: {
           en: 'Protean',
@@ -98,20 +143,22 @@ const triggerSet: TriggerSet<Data> = {
     },
     {
       id: 'BarbaricciaEx Brittle Boulder',
-      type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '759E', source: 'Barbariccia' }),
-      condition: Conditions.targetIsYou(),
+      type: 'HeadMarker',
+      netRegex: NetRegexes.headMarker({ id: '016D', capture: false }),
+      suppressSeconds: 2,
       alertText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
           en: 'Bait Middle => Out (Spread)',
+          de: 'In der Mitte Ködern => Raus (verteilen)',
+          fr: 'Posez au centre -> Écartez-vous à l\'extérieur',
           cn: '中间集合然后八方分散',
         },
       },
     },
     {
-      // Is it possible to get the order the player's gust goes off to call out a move?
-      // These also favor a certain order of Tank/Healer for first set then DPS second set
+      // These also favor a certain order of Tank/Healer for first set then DPS second set,
+      // but if people are dead anybody can get these.
       id: 'BarbaricciaEx Brutal Rush',
       type: 'Tether',
       netRegex: NetRegexes.tether({ id: '0011' }),
@@ -120,18 +167,77 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         text: {
           en: 'Brutal Rush tether on You',
+          de: 'Grausame Hatz Verbindung auf DIR',
+          fr: 'Lien de Ruée brutale sur VOUS',
           cn: '拳击点名',
         },
       },
     },
     {
-      id: 'BarbaricciaEx Bold Boulder',
-      type: 'HeadMarker',
-      netRegex: NetRegexes.headMarker({ id: '015A' }),
+      id: 'BarbaricciaEx Brutal Rush Move',
+      type: 'Ability',
+      // When the Brutal Rush hits you, the follow-up Brutal Gust has locked in.
+      netRegex: NetRegexes.ability({ id: '7583', source: 'Barbariccia' }),
       condition: Conditions.targetIsYou(),
-      alertText: (_data, _matches, output) => output.text!(),
+      response: Responses.moveAway(),
+    },
+    {
+      id: 'BarbaricciaEx Hair Flay',
+      type: 'StartsUsing',
+      netRegex: NetRegexes.startsUsing({ id: '7413', source: 'Barbariccia' }),
+      alertText: (data, matches, output) => {
+        data.hairFlayUpbraidTargets.push(matches.target);
+        if (data.me === matches.target)
+          return output.spread!();
+      },
       outputStrings: {
-        text: {
+        spread: Outputs.spread,
+      },
+    },
+    {
+      id: 'BarbaricciaEx Upbraid',
+      type: 'StartsUsing',
+      netRegex: NetRegexes.startsUsing({ id: '75A8', source: 'Barbariccia' }),
+      alertText: (data, matches, output) => {
+        data.hairFlayUpbraidTargets.push(matches.target);
+        if (data.me === matches.target)
+          return output.partnerStack!();
+      },
+      outputStrings: {
+        partnerStack: {
+          en: 'Partner Stack',
+        },
+      },
+    },
+    {
+      id: 'BarbaricciaEx Upbraid Untargeted',
+      type: 'StartsUsing',
+      netRegex: NetRegexes.startsUsing({ id: '75A8', source: 'Barbariccia', capture: false }),
+      delaySeconds: 0.5,
+      suppressSeconds: 2,
+      alertText: (data, _matches, output) => {
+        if (data.hairFlayUpbraidTargets.includes(data.me))
+          return;
+        return output.partnerStack!();
+      },
+      run: (data) => data.hairFlayUpbraidTargets = [],
+      outputStrings: {
+        partnerStack: {
+          en: 'Partner Stack (unmarked)',
+        },
+      },
+    },
+    {
+      id: 'BarbaricciaEx Bold Boulder',
+      type: 'StartsUsing',
+      netRegex: NetRegexes.startsUsing({ id: '759B', source: 'Barbariccia' }),
+      infoText: (data, matches, output) => {
+        data.boldBoulderTargets.push(matches.target);
+        if (data.me === matches.target)
+          return output.flareOnYou!();
+      },
+      outputStrings: {
+        flareOnYou: {
           en: 'Flare on YOU',
           de: 'Flare auf DIR',
           fr: 'Brasier sur VOUS',
@@ -140,6 +246,33 @@ const triggerSet: TriggerSet<Data> = {
           ko: '플레어 대상자',
         },
       },
+    },
+    {
+      id: 'BarbaricciaEx Trample',
+      type: 'StartsUsing',
+      // There's no castbar for Trample, so use Bold Boulder and collect flares.
+      // There's also an 0064 stack headmarker, but that's used elsewhere.
+      netRegex: NetRegexes.startsUsing({ id: '759B', source: 'Barbariccia', capture: false }),
+      delaySeconds: 0.5,
+      suppressSeconds: 1,
+      // info to match spread and flare to not conflict during knockback
+      infoText: (data, _matches, output) => {
+        if (data.boldBoulderTargets.includes(data.me))
+          return;
+        return output.stackMarker!();
+      },
+      run: (data) => data.boldBoulderTargets = [],
+      outputStrings: {
+        stackMarker: Outputs.stackMarker,
+      },
+    },
+    {
+      id: 'BarbaricciaEx Impact',
+      type: 'StartsUsing',
+      netRegex: NetRegexes.startsUsing({ id: '75A0', source: 'Barbariccia' }),
+      // Could also have used 75A1, full cast time is 5.9s
+      delaySeconds: (_data, matches) => parseFloat(matches.castTime) - 5,
+      response: Responses.knockback(),
     },
     {
       id: 'BarbaricciaEx Playstation Hair Chains',
@@ -191,6 +324,137 @@ const triggerSet: TriggerSet<Data> = {
           cn: '蓝叉',
           ko: '파랑 X',
         },
+      },
+    },
+  ],
+  timelineReplace: [
+    {
+      'locale': 'de',
+      'replaceSync': {
+        'Barbariccia': 'Barbarizia',
+        'Stiff Breeze': 'Föhn',
+      },
+      'replaceText': {
+        'Blow Away': 'Hauerwelle',
+        'Blustery Ruler': 'Tosende Herrin',
+        'Bold Boulder': 'Feister Fels',
+        '(?<!(Brittle|Bold) )Boulder(?! Break)': 'Fels',
+        'Boulder Break': 'Felsbruch',
+        'Brittle Boulder': 'Feiner Fels',
+        'Brush with Death': 'Haaresbreite',
+        'Brutal Gust': 'Grausame Bö',
+        'Brutal Rush': 'Grausame Hatz',
+        'Catabasis': 'Katabasis',
+        'Curling Iron': 'In Schale',
+        'Deadly Twist': 'Flechtfolter',
+        'Dry Blows': 'Haue',
+        'Entanglement': 'Fesselnde Strähnen',
+        'Fetters': 'Fesselung',
+        'Hair Raid': 'Haarstreich',
+        'Hair Spray': 'Wildwuchs',
+        'Impact': 'Impakt',
+        'Iron Out': 'Coiffure',
+        'Knuckle Drum': 'Kahlhieb',
+        'Maelstrom': 'Charybdis',
+        'Raging Storm': 'Tobender Sturm',
+        'Savage Barbery': 'Brutale Barbierei',
+        'Secret Breeze': 'Heimlicher Hauch',
+        '(?<!(Teasing |En))Tangle': 'Strähne',
+        'Teasing Tangles': 'Sinistre Strähnen',
+        'Tornado Chain': 'Kettenorkan',
+        'Tousle': 'Föhn',
+        'Trample': 'Trampeln',
+        'Upbraid': 'Sturmfrisur',
+        'Void Aero III': 'Nichts-Windga',
+        'Void Aero IV': 'Nichts-Windka',
+        'Voidstrom': 'Nichtssturm',
+        'Winding Gale': 'Windende Winde',
+      },
+    },
+    {
+      'locale': 'fr',
+      'replaceSync': {
+        'Barbariccia': 'Barbariccia',
+        'Stiff Breeze': 'rafale de vent',
+      },
+      'replaceText': {
+        'Blow Away': 'Coups convulsifs',
+        'Blustery Ruler': 'Despote venteux',
+        'Bold Boulder': 'Grand conglomérat',
+        '(?<!(Brittle|Bold) )Boulder(?! Break)': 'Conglomérat',
+        'Boulder Break': 'Conglomérat pesant',
+        'Brittle Boulder': 'Petit conglomérat',
+        'Brush with Death': 'Brossage mortel',
+        'Brutal Gust': 'Rafale brutale',
+        'Brutal Rush': 'Ruée brutale',
+        'Catabasis': 'Catabase',
+        'Curling Iron': 'Boucle de fer',
+        'Deadly Twist': 'Nœud fatal',
+        'Dry Blows': 'Coups secs',
+        'Entanglement': 'Enchevêtrement',
+        'Fetters': 'Attache',
+        'Hair Raid': 'Raid capillaire',
+        'Hair Spray': 'Tresse laquée',
+        'Impact': 'Impact',
+        'Iron Out': 'Repassage capillaire',
+        'Knuckle Drum': 'Batterie de poings',
+        'Maelstrom': 'Charybde',
+        'Raging Storm': 'Tempête enragée',
+        'Savage Barbery': 'Barbarie sauvage',
+        'Secret Breeze': 'Brise secrète',
+        '(?<!(Teasing |En))Tangle': 'Emmêlement',
+        'Teasing Tangles': 'Emmêlement railleur',
+        'Tornado Chain': 'Chaîne de tornades',
+        'Tousle': 'Ébourrifage',
+        'Trample': 'Martèlement',
+        'Upbraid': 'Natte sermonneuse',
+        'Void Aero III': 'Méga Vent du néant',
+        'Void Aero IV': 'Giga Vent du néant',
+        'Voidstrom': 'Tempête du néant',
+        'Winding Gale': 'Vent sinueux',
+      },
+    },
+    {
+      'locale': 'ja',
+      'replaceSync': {
+        'Barbariccia': 'バルバリシア',
+        'Stiff Breeze': '荒風',
+      },
+      'replaceText': {
+        'Blow Away': '拳震動地',
+        'Blustery Ruler': 'ブロウルーラー',
+        'Bold Boulder': '大岩礫',
+        '(?<!(Brittle|Bold) )Boulder(?! Break)': '岩礫',
+        'Boulder Break': '重岩礫',
+        'Brittle Boulder': '小岩礫',
+        'Brush with Death': '呪髪操作',
+        'Brutal Gust': 'ブルータルガスト',
+        'Brutal Rush': 'ブルータルラッシュ',
+        'Catabasis': 'カタバシス',
+        'Curling Iron': '呪髪装衣',
+        'Deadly Twist': '呪髪穿',
+        'Dry Blows': '拳震',
+        'Entanglement': '呪髪呪縛',
+        'Fetters': '拘束',
+        'Hair Raid': 'ヘアレイド',
+        'Hair Spray': '呪髪針',
+        'Impact': '衝撃',
+        'Iron Out': '髪衣還元',
+        'Knuckle Drum': 'ナックルビート',
+        'Maelstrom': 'ミールストーム',
+        'Raging Storm': 'レイジングストーム',
+        'Savage Barbery': 'サベッジバルバリー',
+        'Secret Breeze': 'シークレットブリーズ',
+        '(?<!(Teasing |En))Tangle': '呪髪',
+        'Teasing Tangles': '呪髪拘束',
+        'Tornado Chain': 'チェイントルネード',
+        'Tousle': '荒風',
+        'Trample': '踏みつけ',
+        'Upbraid': '呪髪嵐',
+        'Void Aero III': 'ヴォイド・エアロガ',
+        'Void Aero IV': 'ヴォイド・エアロジャ',
+        'Voidstrom': 'ヴォイドストーム',
+        'Winding Gale': 'ウィンディングゲイル',
       },
     },
   ],
