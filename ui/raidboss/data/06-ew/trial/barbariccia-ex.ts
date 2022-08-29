@@ -60,6 +60,8 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Out and Away',
           de: 'Raus und Weg',
+          fr: 'Extérieur et derrière',
+          ja: '外へ',
         },
       },
     },
@@ -85,6 +87,8 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Wall',
           de: 'Wand',
+          fr: 'Mur',
+          ja: '壁へ',
         },
       },
     },
@@ -154,6 +158,7 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Bait Middle => Out (Spread)',
           de: 'In der Mitte Ködern => Raus (verteilen)',
           fr: 'Posez au centre -> Écartez-vous à l\'extérieur',
+          ja: '真ん中で誘導 => 8方向散開',
           cn: '中间集合然后八方分散',
         },
       },
@@ -171,6 +176,7 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Brutal Rush tether on You',
           de: 'Grausame Hatz Verbindung auf DIR',
           fr: 'Lien de Ruée brutale sur VOUS',
+          ja: '自分に突進',
           cn: '拳击点名',
         },
       },
@@ -209,6 +215,8 @@ const triggerSet: TriggerSet<Data> = {
         partnerStack: {
           en: 'Partner Stack',
           de: 'Mit Partner sammeln',
+          fr: 'Package partenaire',
+          ja: '2人で頭割り',
         },
       },
     },
@@ -228,6 +236,8 @@ const triggerSet: TriggerSet<Data> = {
         partnerStack: {
           en: 'Partner Stack (unmarked)',
           de: 'Mit Partner sammeln (nicht markiert)',
+          fr: 'Package partenaire (sans marque)',
+          ja: '2人で頭割り (マーカーなし)',
         },
       },
     },
@@ -339,6 +349,10 @@ const triggerSet: TriggerSet<Data> = {
         'Stiff Breeze': 'Föhn',
       },
       'replaceText': {
+        'ground': 'Boden',
+        'line': 'Linie',
+        'donut': 'Donut',
+        'protean': 'Himmelsrichtungen',
         'Blow Away': 'Hauerwelle',
         'Blustery Ruler': 'Tosende Herrin',
         'Bold Boulder': 'Feister Fels',
