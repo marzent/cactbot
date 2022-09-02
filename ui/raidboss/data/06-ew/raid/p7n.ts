@@ -28,7 +28,9 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Get towers',
           de: 'Türme nehmen',
+          fr: 'Prenez les tours',
           ja: '塔へ',
+          ko: '기둥 들어가기',
         },
       },
     },
@@ -75,7 +77,9 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Move center when safe',
           de: 'Geh in die Mitte, wenn es sicher ist',
+          fr: 'Allez au centre quand il est sûr',
           ja: '安置になったら入る',
+          ko: '중앙 바닥이 생기면 들어가기',
         },
       },
     },
@@ -88,7 +92,9 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Get to edge (in circle)',
           de: 'Geh zum Rand (in den Kreisen)',
+          fr: 'Allez sur le bord (dans le cercle)',
           ja: '角へ (円の中)',
+          ko: '구석으로 (원 안으로)',
         },
       },
     },
@@ -137,7 +143,9 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Avoid Behemoths',
           de: 'Behemoths ausweichen',
+          fr: 'Évitez les Behemoths',
           ja: 'ベヒーモスから離れる',
+          ko: '베히모스 피하기',
         },
       },
     },
@@ -151,7 +159,9 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Avoid line dashes',
           de: 'Linien Anstürme ausweichen',
+          fr: 'Évitez les ruées en ligne',
           ja: '突進回避',
+          ko: '선 돌진 피하기',
         },
       },
     },
@@ -165,7 +175,9 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Avoid Exaflares',
           de: 'Exaflares ausweichen',
+          fr: 'Évitez les brasiers',
           ja: 'エクサプレア',
+          ko: '엑사플레어 피하기',
         },
       },
     },
@@ -188,6 +200,8 @@ const triggerSet: TriggerSet<Data> = {
         'Immature Stymphalide': 'unreif(?:e|er|es|en) Stymphalides',
       },
       'replaceText': {
+        'left': 'Links',
+        'right': 'Rechts',
         'lines': 'Linien',
         'trianngle': 'Dreieck',
         'Blades of Attis': 'Schwertblatt des Attis',
@@ -207,13 +221,15 @@ const triggerSet: TriggerSet<Data> = {
     },
     {
       'locale': 'fr',
-      'missingTranslations': true,
       'replaceSync': {
         'Agdistis': 'Agdistis',
         'Immature Io': 'io immature',
         'Immature Stymphalide': 'stymphalide immature',
       },
       'replaceText': {
+        'left': 'Gauche',
+        'right': 'Droite',
+        'lines': 'Ligne',
         'Blades of Attis': 'Lames d\'Attis',
         'Bough of Attis': 'Grandes branches d\'Attis',
         'Burst': 'Explosion',
