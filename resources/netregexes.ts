@@ -408,9 +408,11 @@ export default class NetRegexes {
   static mapEffect(params?: NetParams['MapEffect']): CactbotBaseRegExp<'MapEffect'> {
     return buildRegex('MapEffect', params);
   }
-
-  static common = {
-    // TODO: remove 40000010 after patch 6.2 is released in all server
-    wipe: NetRegexes.network6d({ command: ['40000010', '4000000F'] }),
-  } as const;
 }
+
+export const commonNetRegex = {
+  // TODO(6.2): remove 40000010 after everybody is on 6.2.
+  wipe: NetRegexes.network6d({ command: ['40000010', '4000000F'] }),
+  cactbotWipeEcho: NetRegexes.echo({ line: 'cactbot wipe.*?' }),
+  userWipeEcho: NetRegexes.echo({ line: 'end' }),
+} as const;
