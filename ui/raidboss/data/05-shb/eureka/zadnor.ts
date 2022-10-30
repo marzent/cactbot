@@ -90,16 +90,15 @@ const ceIds = {
 const limitCutHeadmarkers = ['004F', '0050', '0051', '0052'];
 
 // TODO: promote something like this to Conditions?
-const tankBusterOnParty = (ceName?: string) =>
-  (data: Data, matches: NetMatches['StartsUsing']) => {
-    if (ceName && data.ce !== ceName)
-      return false;
-    if (matches.target === data.me)
-      return true;
-    if (data.role !== 'healer')
-      return false;
-    return data.party.inParty(matches.target);
-  };
+const tankBusterOnParty = (ceName?: string) => (data: Data, matches: NetMatches['StartsUsing']) => {
+  if (ceName && data.ce !== ceName)
+    return false;
+  if (matches.target === data.me)
+    return true;
+  if (data.role !== 'healer')
+    return false;
+  return data.party.inParty(matches.target);
+};
 
 const triggerSet: TriggerSet<Data> = {
   zoneId: ZoneId.Zadnor,
@@ -1680,7 +1679,8 @@ const triggerSet: TriggerSet<Data> = {
         '4Th-Make Cuchulainn': 'Cuchulainn der IV\\. Legion',
         '4th-Make Hashmal': 'Hashmallim der IV\\. Legion',
         '4th-Make Shemhazai': 'Shemhazai der IV\\. Legion',
-        '7 minutes have elapsed since your last activity.': 'Seit deiner letzten Aktivität sind 7 Minuten vergangen.',
+        '7 minutes have elapsed since your last activity.':
+          'Seit deiner letzten Aktivität sind 7 Minuten vergangen.',
         '(?<!4Th Legion )Blackburn': 'Schwarzbrand',
         'Clibanarius': 'Clibanarius',
         'Dawon The Younger': 'Dawon junior',
@@ -1809,7 +1809,8 @@ const triggerSet: TriggerSet<Data> = {
         '4Th-Make Cuchulainn': 'cúchulainn de la 4e légion',
         '4th-Make Hashmal': 'Hashmal de la 4e légion',
         '4th-Make Shemhazai': 'Shemhazai de la 4e légion',
-        '7 minutes have elapsed since your last activity..*?': 'Votre personnage est inactif depuis 7 minutes',
+        '7 minutes have elapsed since your last activity..*?':
+          'Votre personnage est inactif depuis 7 minutes',
         '(?<!4Th Legion )Blackburn': 'Escarre',
         'Clibanarius': 'Clibanarius',
         'Dawon The Younger': 'Dawon junior',

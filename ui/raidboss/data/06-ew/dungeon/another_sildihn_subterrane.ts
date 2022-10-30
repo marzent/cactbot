@@ -1,5 +1,5 @@
 import Conditions from '../../../../../resources/conditions';
-import NetRegexes from '../../../../../resources/netregexes';
+import { UnreachableCode } from '../../../../../resources/not_reached';
 import Outputs from '../../../../../resources/outputs';
 import { Responses } from '../../../../../resources/responses';
 import ZoneId from '../../../../../resources/zone_id';
@@ -16,8 +16,16 @@ export interface Data extends RaidbossData {
   suds?: string;
   soapCounter: number;
   beaterCounter: number;
+  spreeCounter: number;
   hasLingering?: boolean;
   thunderousEchoPlayer?: string;
+  gildedCounter: number;
+  silveredCounter: number;
+  arcaneFontCounter: number;
+  myFlame?: number;
+  brandEffects: { [effectId: number]: string };
+  brandCounter: number;
+  myLastCut?: number;
 }
 
 const triggerSet: TriggerSet<Data> = {
@@ -27,6 +35,13 @@ const triggerSet: TriggerSet<Data> = {
     return {
       soapCounter: 0,
       beaterCounter: 0,
+      spreeCounter: 0,
+      gildedCounter: 0,
+      silveredCounter: 0,
+      arcaneFontCounter: 0,
+      brandEffects: {},
+      brandCounter: 0,
+      flameCounter: 0,
     };
   },
   triggers: [
@@ -34,68 +49,68 @@ const triggerSet: TriggerSet<Data> = {
     {
       id: 'ASS Atropine Spore',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7960', source: 'Aqueduct Belladonna', capture: false }),
+      netRegex: { id: '7960', source: 'Aqueduct Belladonna', capture: false },
       response: Responses.getIn(),
     },
     {
       id: 'ASS Frond Affront',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7961', source: 'Aqueduct Belladonna', capture: false }),
+      netRegex: { id: '7961', source: 'Aqueduct Belladonna', capture: false },
       response: Responses.lookAway(),
     },
     {
       id: 'ASS Deracinator',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7962', source: 'Aqueduct Belladonna' }),
+      netRegex: { id: '7962', source: 'Aqueduct Belladonna' },
       response: Responses.tankBuster(),
     },
     {
       id: 'ASS Left Sweep',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7964', source: 'Aqueduct Kaluk', capture: false }),
+      netRegex: { id: '7964', source: 'Aqueduct Kaluk', capture: false },
       response: Responses.goRight(),
     },
     {
       id: 'ASS Right Sweep',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7963', source: 'Aqueduct Kaluk', capture: false }),
+      netRegex: { id: '7963', source: 'Aqueduct Kaluk', capture: false },
       response: Responses.goLeft(),
     },
     {
       id: 'ASS Creeping Ivy',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7965', source: 'Aqueduct Kaluk', capture: false }),
+      netRegex: { id: '7965', source: 'Aqueduct Kaluk', capture: false },
       response: Responses.getBehind(),
     },
     {
       id: 'ASS Honeyed Left',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '795B', source: 'Aqueduct Udumbara', capture: false }),
+      netRegex: { id: '795B', source: 'Aqueduct Udumbara', capture: false },
       response: Responses.goRight(),
     },
     {
       id: 'ASS Honeyed Right',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '795C', source: 'Aqueduct Udumbara', capture: false }),
+      netRegex: { id: '795C', source: 'Aqueduct Udumbara', capture: false },
       response: Responses.goLeft(),
     },
     {
       id: 'ASS Honeyed Front',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '795D', source: 'Aqueduct Udumbara', capture: false }),
+      netRegex: { id: '795D', source: 'Aqueduct Udumbara', capture: false },
       response: Responses.getBehind(),
     },
     {
       id: 'ASS Arboreal Storm',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7957', source: 'Aqueduct Dryad', capture: false }),
+      netRegex: { id: '7957', source: 'Aqueduct Dryad', capture: false },
       response: Responses.getOut(),
     },
     // ---------------- Silkie ----------------
     {
       id: 'ASS Soap\'s Up',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '775A', source: 'Silkie', capture: false }),
+      netRegex: { id: '775A', source: 'Silkie', capture: false },
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
@@ -107,38 +122,47 @@ const triggerSet: TriggerSet<Data> = {
     {
       id: 'ASS Dust Bluster',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '776C', source: 'Silkie', capture: false }),
+      netRegex: { id: '776C', source: 'Silkie', capture: false },
       response: Responses.knockback(),
     },
     {
       id: 'ASS Squeaky Clean Right',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7755', source: 'Silkie', capture: false }),
+      netRegex: { id: '7755', source: 'Silkie', capture: false },
       response: Responses.goLeft(),
     },
     {
       id: 'ASS Squeaky Clean Left',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7756', source: 'Silkie', capture: false }),
+      netRegex: { id: '7756', source: 'Silkie', capture: false },
       response: Responses.goRight(),
     },
     {
-      id: 'ASS Suds Collect',
-      // 7757 Bracing Suds (Wind / Donut)
-      // 7758 Chilling Suds (Ice / Cardinal)
-      // 7759 Fizzling Suds (Lightning / Intercardinal)
-      type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: ['7757', '7758', '7759'], source: 'Silkie' }),
-      run: (data, matches) => data.suds = matches.id,
+      id: 'ASS Suds Gain',
+      // CE1 Bracing Suds (Wind / Donut)
+      // CE2 Chilling Suds (Ice / Cardinal)
+      // CE3 Fizzling Suds (Lightning / Intercardinal)
+      type: 'GainsEffect',
+      netRegex: { effectId: 'CE[1-3]', target: 'Silkie' },
+      run: (data, matches) => data.suds = matches.effectId,
+    },
+    {
+      id: 'ASS Suds Lose',
+      // CE1 Bracing Suds (Wind / Donut)
+      // CE2 Chilling Suds (Ice / Cardinal)
+      // CE3 Fizzling Suds (Lightning / Intercardinal)
+      type: 'LosesEffect',
+      netRegex: { effectId: 'CE[1-3]', target: 'Silkie', capture: false },
+      run: (data) => delete data.suds,
     },
     {
       id: 'ASS Slippery Soap',
       // Happens 5 times in the encounter
       type: 'Ability',
-      netRegex: NetRegexes.ability({ id: '79FB', source: 'Silkie' }),
+      netRegex: { id: '79FB', source: ['Silkie', 'Eastern Ewer'] },
       preRun: (data) => data.soapCounter++,
       alertText: (data, matches, output) => {
-        if (data.suds === '7757') {
+        if (data.suds === 'CE1') {
           // Does not happen on first or third Slippery Soap
           if (matches.target === data.me)
             return output.getBehindPartyKnockback!();
@@ -183,22 +207,22 @@ const triggerSet: TriggerSet<Data> = {
     {
       id: 'ASS Slippery Soap with Chilling Suds',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '775E', source: 'Silkie' }),
-      condition: (data) => data.suds === '7758',
+      netRegex: { id: '775E', source: 'Silkie' },
+      condition: (data) => data.suds === 'CE2',
       delaySeconds: (_data, matches) => parseFloat(matches.castTime) - 1,
       response: Responses.moveAround(),
     },
     {
       id: 'ASS Slippery Soap After',
       type: 'Ability',
-      netRegex: NetRegexes.ability({ id: '775E', source: 'Silkie', capture: false }),
+      netRegex: { id: '775E', source: 'Silkie', capture: false },
       infoText: (data, _matches, output) => {
         switch (data.suds) {
-          case '7757':
+          case 'CE1':
             return output.getUnder!();
-          case '7758':
+          case 'CE2':
             return output.intercards!();
-          case '7759':
+          case 'CE3':
             return output.spreadCardinals!();
         }
       },
@@ -221,7 +245,7 @@ const triggerSet: TriggerSet<Data> = {
     {
       id: 'ASS Carpet Beater',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '774F', source: 'Silkie' }),
+      netRegex: { id: '774F', source: 'Silkie' },
       preRun: (data) => data.beaterCounter++,
       response: (data, matches, output) => {
         // cactbot-builtin-response
@@ -250,13 +274,18 @@ const triggerSet: TriggerSet<Data> = {
       id: 'ASS Soaping Spree',
       // Boss does not cast Fizzling Duster with Soaping Spree
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7767', source: 'Silkie', capture: false }),
+      netRegex: { id: '7767', source: 'Silkie', capture: false },
+      preRun: (data) => ++data.spreeCounter,
       infoText: (data, _matches, output) => {
         switch (data.suds) {
-          case '7757':
+          case 'CE1':
             return output.getUnder!();
-          case '7758':
+          case 'CE2':
             return output.intercards!();
+          default:
+            if (data.spreeCounter === 1)
+              return output.underPuff!();
+            return output.avoidPuffs!();
         }
       },
       outputStrings: {
@@ -269,12 +298,20 @@ const triggerSet: TriggerSet<Data> = {
           cn: '四角',
           ko: '대각선 쪽으로',
         },
+        underPuff: {
+          en: 'Under green puff',
+          de: 'Unter grünem Puschel',
+        },
+        avoidPuffs: {
+          en: 'Avoid puff aoes',
+          de: 'Weiche den Puschel AoEs aus',
+        },
       },
     },
     {
       id: 'ASS Total Wash',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7750', source: 'Silkie', capture: false }),
+      netRegex: { id: '7750', source: 'Silkie', capture: false },
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
@@ -290,7 +327,7 @@ const triggerSet: TriggerSet<Data> = {
     {
       id: 'ASS Infernal Pain',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7969', source: 'Sil\'dihn Dullahan', capture: false }),
+      netRegex: { id: '7969', source: 'Sil\'dihn Dullahan', capture: false },
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
@@ -305,13 +342,13 @@ const triggerSet: TriggerSet<Data> = {
     {
       id: 'ASS Blighted Gloom',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7966', source: 'Sil\'dihn Dullahan', capture: false }),
+      netRegex: { id: '7966', source: 'Sil\'dihn Dullahan', capture: false },
       response: Responses.getOut(),
     },
     {
       id: 'ASS Infernal Weight',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '796B', source: 'Aqueduct Armor', capture: false }),
+      netRegex: { id: '796B', source: 'Aqueduct Armor', capture: false },
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
@@ -323,21 +360,21 @@ const triggerSet: TriggerSet<Data> = {
     {
       id: 'ASS Dominion Slash',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '796A', source: 'Aqueduct Armor', capture: false }),
+      netRegex: { id: '796A', source: 'Aqueduct Armor', capture: false },
       response: Responses.getBehind(),
     },
     // ---------------- Gladiator of Sil'dih ----------------
     {
       id: 'ASS Flash of Steel',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7671', source: 'Gladiator of Sil\'dih', capture: false }),
+      netRegex: { id: '7671', source: 'Gladiator of Sil\'dih', capture: false },
       response: Responses.aoe(),
     },
     {
       id: 'ASS Sculptor\'s Passion',
       // This is a wild charge, player in front takes most damage
       type: 'Ability',
-      netRegex: NetRegexes.ability({ id: '6854', source: 'Gladiator of Sil\'dih' }),
+      netRegex: { id: '6854', source: 'Gladiator of Sil\'dih' },
       alertText: (data, matches, output) => {
         if (matches.target === data.me)
           return output.chargeOnYou!();
@@ -365,14 +402,14 @@ const triggerSet: TriggerSet<Data> = {
     {
       id: 'ASS Mighty Smite',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7672', source: 'Gladiator of Sil\'dih' }),
+      netRegex: { id: '7672', source: 'Gladiator of Sil\'dih' },
       response: Responses.tankBuster(),
     },
     {
       id: 'ASS Lingering Echoes',
       // CDC Lingering Echoes (Spread + Move)
       type: 'GainsEffect',
-      netRegex: NetRegexes.gainsEffect({ effectId: 'CDC' }),
+      netRegex: { effectId: 'CDC' },
       condition: Conditions.targetIsYou(),
       preRun: (data) => data.hasLingering = true,
       delaySeconds: (_data, matches) => parseFloat(matches.duration) - 2,
@@ -382,7 +419,7 @@ const triggerSet: TriggerSet<Data> = {
       id: 'ASS Thunderous Echo Collect',
       // CDD Thunderous Echo (Stack)
       type: 'GainsEffect',
-      netRegex: NetRegexes.gainsEffect({ effectId: 'CDD' }),
+      netRegex: { effectId: 'CDD' },
       preRun: (data, matches) => data.thunderousEchoPlayer = matches.target,
     },
     {
@@ -392,7 +429,7 @@ const triggerSet: TriggerSet<Data> = {
       // 14s = first
       // 17s = second
       type: 'GainsEffect',
-      netRegex: NetRegexes.gainsEffect({ effectId: 'CDA' }),
+      netRegex: { effectId: 'CDA' },
       condition: Conditions.targetIsYou(),
       delaySeconds: 0.1,
       durationSeconds: 10,
@@ -450,7 +487,7 @@ const triggerSet: TriggerSet<Data> = {
       //   Ring 3: 765F (9.7s) / 7662 (11.7s)
       // Only tracking the 11.7s spell
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: ['7660', '7661', '7662'], source: 'Gladiator of Sil\'dih' }),
+      netRegex: { id: ['7660', '7661', '7662'], source: 'Gladiator of Sil\'dih' },
       infoText: (_data, matches, output) => {
         if (matches.id === '7660')
           return output.outsideInner!();
@@ -477,7 +514,7 @@ const triggerSet: TriggerSet<Data> = {
       id: 'ASS Echoes of the Fallen Reminder',
       // CDA Echoes of the Fallen (Spread)
       type: 'GainsEffect',
-      netRegex: NetRegexes.gainsEffect({ effectId: 'CDA' }),
+      netRegex: { effectId: 'CDA' },
       condition: Conditions.targetIsYou(),
       delaySeconds: (_data, matches) => parseFloat(matches.duration) - 4,
       response: Responses.spread(),
@@ -486,7 +523,7 @@ const triggerSet: TriggerSet<Data> = {
       id: 'ASS Thunderous Echo Reminder',
       // CDD Thunderous Echo (Stack)
       type: 'GainsEffect',
-      netRegex: NetRegexes.gainsEffect({ effectId: 'CDD' }),
+      netRegex: { effectId: 'CDD' },
       delaySeconds: (_data, matches) => parseFloat(matches.duration) - 4,
       infoText: (data, matches, output) => {
         if (data.hasLingering)
@@ -502,10 +539,68 @@ const triggerSet: TriggerSet<Data> = {
       },
     },
     {
-      id: 'ASS Sundered Remainds',
+      id: 'ASS Nothing beside Remains',
+      type: 'StartsUsing',
+      netRegex: { id: '768C', source: 'Gladiator of Sil\'dih', capture: false },
+      suppressSeconds: 1,
+      response: Responses.spread(),
+    },
+    {
+      id: 'ASS Accursed Visage Collect',
+      // CDF = Gilded Fate
+      // CE0 = Silvered Fate
+      type: 'GainsEffect',
+      netRegex: { effectId: ['CDF', 'CE0'] },
+      condition: Conditions.targetIsYou(),
+      run: (data, matches) => {
+        const id = matches.effectId;
+        if (id === 'CDF')
+          ++data.gildedCounter;
+        else if (id === 'CE0')
+          ++data.silveredCounter;
+      },
+    },
+    {
+      id: 'ASS Golden/Silver Flame',
+      // 766F = Golden Flame
+      // 7670 = Silver Flame
+      type: 'StartsUsing',
+      netRegex: { id: ['766F', '7670'], source: 'Hateful Visage', capture: false },
+      suppressSeconds: 1,
+      infoText: (data, _matches, output) => {
+        if (data.gildedCounter > 0) {
+          if (data.silveredCounter > 0)
+            return output.bothFates!();
+          return output.gildedFate!();
+        }
+        if (data.silveredCounter > 0)
+          return output.silveredFate!();
+        return output.neitherFate!();
+      },
+      outputStrings: {
+        bothFates: {
+          en: 'Get hit by silver and gold',
+          de: 'Von Silber und Gold treffen lassen',
+        },
+        gildedFate: {
+          en: 'Get hit by two silver',
+          de: 'Von 2 Silber treffen lassen',
+        },
+        silveredFate: {
+          en: 'Get hit by two gold',
+          de: 'Von 2 Gold treffen lassen',
+        },
+        neitherFate: {
+          en: 'Avoid silver and gold',
+          de: 'Vermeide Silber und Gold',
+        },
+      },
+    },
+    {
+      id: 'ASS Sundered Remains',
       // Using 7666 Curse of the Monument
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '7666', source: 'Gladiator of Sil\'dih', capture: false }),
+      netRegex: { id: '7666', source: 'Gladiator of Sil\'dih', capture: false },
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
@@ -521,21 +616,397 @@ const triggerSet: TriggerSet<Data> = {
     {
       id: 'ASS Curse of the Monument',
       type: 'Ability',
-      netRegex: NetRegexes.ability({ id: '7666', source: 'Gladiator of Sil\'dih', capture: false }),
+      netRegex: { id: '7666', source: 'Gladiator of Sil\'dih', capture: false },
       response: Responses.breakChains(),
+    },
+    {
+      id: 'ASS Scream of the Fallen',
+      // CDB = Scream of the Fallen (defamation)
+      // BBC = First in Line
+      // BBD = Second in Line
+      // First/Second in Line are only used once all dungeon so we can just trigger off of them
+      type: 'GainsEffect',
+      netRegex: { effectId: 'BB[CD]' },
+      condition: Conditions.targetIsYou(),
+      infoText: (_data, matches, output) => {
+        const id = matches.effectId;
+        if (id === 'BBD')
+          return output.soakThenSpread!();
+        return output.spreadThenSoak!();
+      },
+      outputStrings: {
+        soakThenSpread: {
+          en: 'Soak first towers => Spread',
+          de: 'Türme zuerst nehmen => verteilen',
+        },
+        spreadThenSoak: {
+          en: 'Spread => Soak second towers',
+          de: 'Verteilen => zweite Türme nehmen',
+        },
+      },
     },
     // ---------------- Shadowcaster Zeless Gah ----------------
     {
       id: 'ASS Show of Strength',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '74AF', source: 'Shadowcaster Zeless Gah', capture: false }),
+      netRegex: { id: '74AF', source: 'Shadowcaster Zeless Gah', capture: false },
       response: Responses.aoe(),
     },
     {
       id: 'ASS Firesteel Fracture',
       type: 'StartsUsing',
-      netRegex: NetRegexes.startsUsing({ id: '74AD', source: 'Shadowcaster Zeless Gah' }),
+      netRegex: { id: '74AD', source: 'Shadowcaster Zeless Gah' },
       response: Responses.tankCleave(),
+    },
+    {
+      id: 'ASS Infern Brand Counter',
+      type: 'StartsUsing',
+      netRegex: { id: '7491', source: 'Shadowcaster Zeless Gah', capture: false },
+      run: (data) => {
+        data.brandCounter++;
+        data.arcaneFontCounter = 0;
+      },
+    },
+    {
+      id: 'ASS Arcane Font Tracker',
+      type: 'AddedCombatant',
+      netRegex: { name: 'Arcane Font', capture: false },
+      // Only run this trigger for second Infern Band, first set of portals
+      condition: (data) => data.myFlame === undefined,
+      run: (data) => data.arcaneFontCounter++,
+    },
+    {
+      id: 'ASS Infern Brand Collect',
+      // Count field on 95D on Infern Brand indicates Brand's number:
+      //   1C2 - 1C5, Orange 1 - 4
+      //   1C6 - 1C9, Blue 1 - 4
+      type: 'GainsEffect',
+      netRegex: { effectId: '95D', target: 'Infern Brand' },
+      run: (data, matches) => data.brandEffects[parseInt(matches.targetId, 16)] = matches.count,
+    },
+    {
+      id: 'ASS Infern Brand 2 Starting Corner',
+      // CC4 First Brand
+      // CC5 Second Brand
+      // CC6 Third Brand
+      // CC7 Fourth Brand
+      type: 'GainsEffect',
+      netRegex: { effectId: ['CC4', 'CC5', 'CC6', 'CC7'] },
+      condition: (data, matches) => data.me === matches.target && data.brandCounter === 2,
+      delaySeconds: 0.1, // Delay to collect all Infern Brand Effects
+      durationSeconds: (_data, matches) => parseFloat(matches.duration) - 0.1,
+      infoText: (data, matches, output) => {
+        const brandMap: { [effectId: string]: number } = {
+          'CC4': 1,
+          'CC5': 2,
+          'CC6': 3,
+          'CC7': 4,
+        };
+        const myNum = brandMap[matches.effectId];
+        if (myNum === undefined)
+          throw new UnreachableCode();
+
+        // Store for later trigger
+        data.myFlame = myNum;
+
+        if (Object.keys(data.brandEffects).length !== 8) {
+          // Missing Infern Brands, output number
+          return output.brandNum!({ num: myNum });
+        }
+
+        // Brands are located along East and South wall and in order by id
+        // Blue N/S:
+        //   304.00, -108.00, Used for NW/NE, 0 north
+        //   304.00, -106.00, Used for NW/NE, 1 north
+        //   304.00, -104.00, Used for SW/SE, 2 south
+        //   304.00, -102.00, Used for SW/SE, 3 south
+        // Orange E/W:
+        //   286.00, -85.00, Used for SW/NW, 4 west
+        //   288.00, -85.00, Used for SW/NW, 5 west
+        //   290.00, -85.00, Used for SE/NE, 6 east
+        //   292.00, -85.00, Used for SE/NE, 7 east
+        // Set brandEffects to descending order to match
+        const brandEffects = Object.entries(data.brandEffects).sort((a, b) => a[0] > b[0] ? -1 : 1);
+
+        // Get just the effectIds
+        const effectIds = brandEffects.map((value) => {
+          return value.slice(1, 2)[0];
+        });
+
+        // Split the results
+        const blueBrands = effectIds.slice(0, 4);
+        const orangeBrands = effectIds.slice(4, 8);
+
+        const myNumToBlue: { [num: number]: string } = {
+          4: '1C9',
+          3: '1C8',
+          2: '1C7',
+          1: '1C6',
+        };
+        const myNumToOrange: { [num: number]: string } = {
+          4: '1C5',
+          3: '1C4',
+          2: '1C3',
+          1: '1C2',
+        };
+
+        // Find where our numbers are in each set of brands
+        const x = orangeBrands.indexOf(myNumToOrange[myNum]);
+        const y = blueBrands.indexOf(myNumToBlue[myNum]) + 4;
+        const indexToCardinal: { [num: number]: string } = {
+          0: 'south',
+          1: 'south',
+          2: 'north',
+          3: 'north',
+          4: 'east',
+          5: 'east',
+          6: 'west',
+          7: 'west',
+        };
+
+        const cardX = indexToCardinal[x];
+        const cardY = indexToCardinal[y];
+
+        // Not able to be undefined as values determined from array that only has 8 indices
+        if (cardX === undefined || cardY === undefined)
+          throw new UnreachableCode();
+
+        return output.text!({ num: myNum, corner: output[cardX + cardY]!() });
+      },
+      run: (data) => data.brandEffects = {},
+      outputStrings: {
+        text: {
+          en: 'Brand ${num}: ${corner} corner',
+          de: 'Kryptogramm ${num}: ${corner} Ecke',
+        },
+        brandNum: {
+          en: 'Brand ${num}',
+          de: 'Kryptogramm ${num}',
+        },
+        northwest: Outputs.northwest,
+        northeast: Outputs.northeast,
+        southeast: Outputs.southeast,
+        southwest: Outputs.southwest,
+      },
+    },
+    {
+      id: 'ASS Infern Brand 2 First Flame',
+      // CC8 First Flame
+      // CC9 Second Flame
+      // CCA Third Flame
+      // CCB Fourth Flame
+      type: 'GainsEffect',
+      netRegex: { effectId: 'CC8' },
+      condition: (data, matches) => data.me === matches.target && data.brandCounter === 2,
+      alertText: (data, _matches, output) => {
+        // Blue lines cut when three (West)
+        if (data.arcaneFontCounter === 3) {
+          // Set to two for 5th cut's color
+          data.arcaneFontCounter = 2;
+          return output.cutBlueOne!();
+        }
+
+        // Orange lines cut when two (North)
+        if (data.arcaneFontCounter === 2) {
+          // Set to three for 5th cut's color
+          data.arcaneFontCounter = 3;
+          return output.cutOrangeOne!();
+        }
+        return output.firstCut!();
+      },
+      outputStrings: {
+        cutBlueOne: {
+          en: 'Cut Blue 1',
+          de: 'Blau 1 durchtrennen',
+        },
+        cutOrangeOne: {
+          en: 'Cut Orange 1',
+          de: 'Orange 1 durchtrennen',
+        },
+        firstCut: {
+          en: 'First Cut',
+          de: 'Als Erster durchtrennen',
+        },
+      },
+    },
+    {
+      id: 'ASS Infern Brand 2 Remaining Flames',
+      // Player receives Magic Vulnerability Up from Cryptic Flame for 7.96s after cutting
+      // Trigger will delay for this Magic Vulnerability Up for safety
+      // No exception for time remaining on debuff to sacrafice to cut the line
+      type: 'LosesEffect',
+      netRegex: { effectId: '95D', target: 'Infern Brand', count: '1C[2-9]' },
+      condition: (data, matches) => {
+        if (data.myFlame !== undefined && data.brandCounter === 2) {
+          const countToNum: { [count: string]: number } = {
+            '1C9': 4,
+            '1C8': 3,
+            '1C7': 2,
+            '1C6': 1,
+            '1C5': 4,
+            '1C4': 3,
+            '1C3': 2,
+            '1C2': 1,
+          };
+
+          // Check which flame order this is
+          const flameCut = countToNum[matches.count];
+          if (flameCut === undefined)
+            return false;
+
+          // Wraparound and add 1 as we need next flame to cut
+          // Check if not our turn to cut
+          if (flameCut % 4 + 1 !== data.myFlame)
+            return false;
+
+          return true;
+        }
+        return false;
+      },
+      delaySeconds: (data, matches) => {
+        if (data.myLastCut === undefined)
+          return 0;
+
+        // Check if we still need to delay for Magic Vulnerability Up to expire
+        // Magic Vulnerability Up lasts 7.96 from last cut
+        const delay = 7.96 - (Date.parse(matches.timestamp) - data.myLastCut) / 1000;
+        if (delay > 0)
+          return delay;
+        return 0;
+      },
+      alertText: (data, matches, output) => {
+        if (data.arcaneFontCounter === 3 && matches.count.match(/1C[6-8]/)) {
+          // Expected Blue and count is Blue
+          data.arcaneFontCounter = 2;
+          return output.cutBlueNum!({ num: data.myFlame });
+        }
+        if (data.arcaneFontCounter === 2 && matches.count.match(/1C[2-4]/)) {
+          // Expected Orange and count is Orange
+          data.arcaneFontCounter = 3;
+          return output.cutOrangeNum!({ num: data.myFlame });
+        }
+
+        // Exception for First Flame on second set
+        if (data.myFlame === 1) {
+          if (data.arcaneFontCounter === 3 && matches.count === '1C5')
+            return output.cutBlueNum!({ num: data.myFlame });
+          if (data.arcaneFontCounter === 2 && matches.count === '1C9')
+            return output.cutOrangeNum!({ num: data.myFlame });
+        }
+        // Unexpected result, mechanic is likely failed at this point
+      },
+      run: (data) => data.brandEffects = {},
+      outputStrings: {
+        cutOrangeNum: {
+          en: 'Cut Orange ${num}',
+          de: 'Orange ${num} durchtrennen',
+        },
+        cutBlueNum: {
+          en: 'Cut Blue ${num}',
+          de: 'Blau ${num} durchtrennen',
+        },
+      },
+    },
+    {
+      id: 'ASS Infern Brand Cryptic Flame Collect',
+      // Collect timestamp for when last cut flame
+      type: 'Ability',
+      netRegex: { id: '74B7', source: 'Infern Brand' },
+      condition: Conditions.targetIsYou(),
+      run: (data, matches) => data.myLastCut = Date.parse(matches.timestamp),
+    },
+    {
+      id: 'ASS Banishment',
+      // Players receive invisible effect that indicates rotation and direction
+      // of their teleport attached teleport pad
+      //
+      // At the same time, two teleports on North and South are also marked:
+      // one rotates outside the arena, the other rotates towards the inner rows
+      // Players have 12s to teleport using the safe teleports prior to Call of
+      // the Portal (CCC) expiration
+      //
+      // The first teleports occur at ~11.4s after these debuff go out
+      // After first teleport, lasers block rows but can be teleported over
+      // Hitting a laser results in stun and likely death
+      //
+      // Seconds after first teleport, two wards will go off that target the
+      // two nearest players. Players need to have teleported close enough
+      // to the ward to bait the ward away from other players
+      //
+      // Following the first set of baits, the player's teleport will go off
+      // which should have been positioned to teleport across the laser to bait
+      // the final ward away from other players
+      //
+      // 1CD Blue (Counterclockwise) Teleporting East
+      // 1CE Orange (Clockwise) Teleporting West
+      // 1D2 Orange (Clockwise) Teleporting East
+      // 1D3 Blue (Counterclockwise) Teleporting West
+      //
+      // There are multiple strategies, so this only describes what you have,
+      // from there you can create a personal call of where to go
+      type: 'GainsEffect',
+      netRegex: { effectId: 'B9A' },
+      condition: Conditions.targetIsYou(),
+      infoText: (_data, matches, output) => {
+        switch (matches.count) {
+          case '1CD':
+            return output.blueEast!();
+          case '1CE':
+            return output.orangeWest!();
+          case '1D2':
+            return output.orangeEast!();
+          case '1D3':
+            return output.blueWest!();
+        }
+      },
+      outputStrings: {
+        blueEast: {
+          en: 'Blue Teleporting East',
+        },
+        blueWest: {
+          en: 'Blue Teleporting West',
+        },
+        orangeEast: {
+          en: 'Orange Teleporting East',
+        },
+        orangeWest: {
+          en: 'Orange Teleporting West',
+        },
+      },
+    },
+    {
+      id: 'ASS Banishment First Ward',
+      // This debuff expires 4.7s before the first bait, but there is a slight
+      // animation lock from the teleport that occurs
+      // Repositioning may be required to bait the active ward's Infern Wave
+      // Using Call of the Portal (CCC) expiration for trigger
+      type: 'LosesEffect',
+      netRegex: { effectId: 'CCC' },
+      condition: Conditions.targetIsYou(),
+      delaySeconds: 0.75, // Delay for animation lock from teleport to complete
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: {
+          en: 'Bait First Ward',
+        },
+      },
+    },
+    {
+      id: 'ASS Banishment Bait Second Ward',
+      // After the second teleport and stun expiring, there is 2s before the
+      // the last ward casts Infern Wave that must be baited
+      // Rite of Passage (CCD) debuff is tied to the player's teleport going
+      // off
+      type: 'LosesEffect',
+      netRegex: { effectId: 'CCD' },
+      condition: Conditions.targetIsYou(),
+      delaySeconds: 2, // Delay for stun to complete
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: {
+          en: 'Bait Second Ward',
+        },
+      },
     },
   ],
   timelineReplace: [
