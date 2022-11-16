@@ -208,6 +208,9 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         text: {
           en: 'Under => Back',
+          de: 'Unter Ihn => Hinter den Boss',
+          ja: '下 => 後ろ',
+          cn: '下方 => 背后',
         },
       },
     },
@@ -220,6 +223,9 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         text: {
           en: 'Sides => Back',
+          de: 'Seiten => Hinter den Boss',
+          ja: '横 => 後ろ',
+          cn: '两侧 => 背后',
         },
       },
     },
@@ -232,6 +238,9 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         text: {
           en: 'Under => Front',
+          de: 'Unter Ihn => Vor den Boss',
+          ja: '下 => 前',
+          cn: '下方 => 正面',
         },
       },
     },
@@ -244,6 +253,9 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         text: {
           en: 'Sides => Front',
+          de: 'Seiten => Vor den Boss',
+          ja: '横 => 前',
+          cn: '两侧 => 正面',
         },
       },
     },
@@ -251,42 +263,47 @@ const triggerSet: TriggerSet<Data> = {
   timelineReplace: [
     {
       'locale': 'de',
-      'missingTranslations': true,
       'replaceSync': {
         'Arch-Eta': 'Erz-Eta',
+        'Chi': 'Chi',
         'Fan Ail': 'Fan Ail',
+        'Narrow-rift': 'Enger Riss',
       },
     },
     {
       'locale': 'fr',
-      'missingTranslations': true,
       'replaceSync': {
         'Arch-Eta': 'Arch-Êta',
+        'Chi': 'Chi',
         'Fan Ail': 'Fan Ail',
+        'Narrow-rift': 'Rift-étroit',
       },
     },
     {
       'locale': 'ja',
-      'missingTranslations': true,
       'replaceSync': {
         'Arch-Eta': 'アーチイータ',
+        'Chi': 'カイ',
         'Fan Ail': 'ファン・アイル',
+        'Narrow-rift': 'ナロー＝リフト',
       },
     },
     {
       'locale': 'cn',
-      'missingTranslations': true,
       'replaceSync': {
         'Arch-Eta': '伊塔总领',
+        'Chi': '希',
         'Fan Ail': '凡·艾尔',
+        'Narrow-rift': '狭缝',
       },
     },
     {
       'locale': 'ko',
-      'missingTranslations': true,
       'replaceSync': {
         'Arch-Eta': '아치 에타',
+        'Chi': '키',
         'Fan Ail': '판 아일',
+        'Narrow-rift': '내로 리프트',
       },
     },
   ],
