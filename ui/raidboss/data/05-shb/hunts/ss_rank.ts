@@ -16,6 +16,9 @@ const triggerSet: TriggerSet<Data> = {
   ],
   zoneLabel: {
     en: 'SS Rank Hunts',
+    de: 'SS Jagdziele',
+    cn: 'SS 级狩猎怪',
+    ko: 'SS급 마물',
   },
   triggers: [
     {
@@ -52,6 +55,38 @@ const triggerSet: TriggerSet<Data> = {
       netRegex: { id: '46CE', source: 'Forgiven Rebellion', capture: false },
       condition: (data) => data.inCombat,
       // TODO: which way is this rotating
+    },
+  ],
+  timelineReplace: [
+    {
+      'locale': 'de',
+      'replaceSync': {
+        'Forgiven Rebellion': 'geläutert(?:e|er|es|en) Rebellion',
+      },
+    },
+    {
+      'locale': 'fr',
+      'replaceSync': {
+        'Forgiven Rebellion': 'rébellion pardonnée',
+      },
+    },
+    {
+      'locale': 'ja',
+      'replaceSync': {
+        'Forgiven Rebellion': 'フォーギヴン・リベリオン',
+      },
+    },
+    {
+      'locale': 'cn',
+      'replaceSync': {
+        'Forgiven Rebellion': '得到宽恕的叛乱',
+      },
+    },
+    {
+      'locale': 'ko',
+      'replaceSync': {
+        'Forgiven Rebellion': '면죄된 폭동',
+      },
     },
   ],
 };
