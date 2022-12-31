@@ -8,7 +8,6 @@ import { RaidbossData } from '../../../../../types/data';
 import { PluginCombatantState } from '../../../../../types/event';
 import { TriggerSet } from '../../../../../types/trigger';
 
-// TODO: Gladiator triggers for gold/silver location using OverlayPlugin?
 // TODO: Gladiator adjustments to timeline
 // TODO: Shadowcaster Infern Brand 1 and 4 safe location triggers if possible
 // TODO: Shadowcaster adjustments to timeline
@@ -16,6 +15,8 @@ import { TriggerSet } from '../../../../../types/trigger';
 const puffWind = 'CE9';
 const puffIce = 'CEA';
 const puffLightning = 'CEB';
+
+export type Visage = { gold: number; silver: number };
 
 export interface Data extends RaidbossData {
   suds?: string;
@@ -28,9 +29,10 @@ export interface Data extends RaidbossData {
   mightCasts: PluginCombatantState[];
   mightDir?: string;
   hasLingering?: boolean;
+  isCurseSpreadFirst?: boolean;
   thunderousEchoPlayer?: string;
-  gildedCounter: number;
-  silveredCounter: number;
+  myVisage: Visage;
+  visageMap: { [squareId: number]: Visage };
   arcaneFontCounter: number;
   myFlame?: number;
   brandEffects: { [effectId: number]: string };
@@ -53,6 +55,13 @@ const positionTo8Dir = (posX: number, posY: number, centerX: number, centerY: nu
   return Math.round(4 - 4 * Math.atan2(relX, relY) / Math.PI) % 8;
 };
 
+export const headingTo4Dir = (heading: number) => {
+  // Dirs: N = 0, E = 1, S = 2, W = 3
+  return (2 - Math.round(heading * 2 / Math.PI)) % 4;
+};
+
+const visageMapIdx = (col: number, row: number) => row * 4 + col;
+
 const triggerSet: TriggerSet<Data> = {
   zoneId: ZoneId.AnotherSildihnSubterrane,
   timelineFile: 'another_sildihn_subterrane.txt',
@@ -64,8 +73,8 @@ const triggerSet: TriggerSet<Data> = {
       beaterCounter: 0,
       spreeCounter: 0,
       mightCasts: [],
-      gildedCounter: 0,
-      silveredCounter: 0,
+      myVisage: { gold: 0, silver: 0 },
+      visageMap: {},
       arcaneFontCounter: 0,
       brandEffects: {},
       brandCounter: 0,
@@ -381,7 +390,7 @@ const triggerSet: TriggerSet<Data> = {
       type: 'StartsUsing',
       netRegex: { id: '775E', source: 'Silkie' },
       condition: (data) => data.suds === 'CE2',
-      delaySeconds: (_data, matches) => parseFloat(matches.castTime) - 1,
+      delaySeconds: (_data, matches) => parseFloat(matches.castTime) - 1.5,
       response: Responses.moveAround(),
     },
     {
@@ -454,13 +463,14 @@ const triggerSet: TriggerSet<Data> = {
       type: 'StartsUsing',
       netRegex: { id: '7767', source: 'Silkie', capture: false },
       condition: (data) => {
-        ++data.spreeCounter; // increment regardless if condition ultimately returns true or false
-        // skip trigger on 2nd & 3rd Fresh Puff  - those are handled by separate Fresh Puff triggers because safe area can be more nuanced
-        return data.puffCounter !== 2 && data.puffCounter !== 3;
+        ++data.spreeCounter;
+        // skip 2nd and 3rd sprees - those are handled by separate Fresh Puff triggers because safe area can be more nuanced
+        return data.spreeCounter !== 2 && data.spreeCounter !== 3;
       },
       infoText: (data, _matches, output) => {
         switch (data.suds) {
           case 'CE1':
+            // TODO: does spree 4 need an earlier warning to move the boss away from blue puffs?
             return output.getUnder!();
           case 'CE2':
             return output.intercards!();
@@ -768,6 +778,7 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         windAndLightning: {
           en: 'Under ${dir} green puff',
+          ko: '${dir} 초록색 구슬 밑으로',
         },
         doubleIce: {
           en: 'Intercards, away from puffs',
@@ -778,6 +789,7 @@ const triggerSet: TriggerSet<Data> = {
         },
         iceAndLightning: {
           en: 'Sides of ${dir} yellow puff',
+          ko: '${dir} 노란색 구슬 옆으로',
         },
         doubleLightning: {
           en: 'Between puffs',
@@ -1094,13 +1106,12 @@ const triggerSet: TriggerSet<Data> = {
       delaySeconds: 0.1,
       durationSeconds: 10,
       infoText: (data, matches, output) => {
-        if (data.hasLingering)
-          return output.spreadThenSpread!();
-
         const duration = parseFloat(matches.duration);
+        data.isCurseSpreadFirst = duration < 16;
 
-        // Check if spread first
-        if (duration < 16) {
+        if (data.isCurseSpreadFirst) {
+          if (data.hasLingering)
+            return output.spreadThenBait!();
           if (data.me === data.thunderousEchoPlayer)
             return output.spreadThenStackOnYou!();
           if (data.thunderousEchoPlayer === undefined)
@@ -1108,6 +1119,8 @@ const triggerSet: TriggerSet<Data> = {
           return output.spreadThenStackOn!({ player: data.ShortName(data.thunderousEchoPlayer) });
         }
 
+        if (data.hasLingering)
+          return output.baitThenSpread!();
         if (data.me === data.thunderousEchoPlayer)
           return output.stackOnYouThenSpread!();
         if (data.thunderousEchoPlayer === undefined)
@@ -1145,11 +1158,13 @@ const triggerSet: TriggerSet<Data> = {
           ja: '散会 => 自分に頭割り',
           ko: '산개 => 나에게 쉐어',
         },
-        spreadThenSpread: {
-          en: 'Spread => Spread',
-          de: 'Verteilen => Sammeln',
-          ja: '自分に連呪、ひとりぼっちでずっと',
-          ko: '산개 => 산개',
+        spreadThenBait: {
+          en: 'Spread => Bait Puddle',
+          ko: '산개 => 장판 유도',
+        },
+        baitThenSpread: {
+          en: 'Bait Puddle => Spread',
+          ko: '장판 유도 => 산개',
         },
       },
     },
@@ -1194,28 +1209,26 @@ const triggerSet: TriggerSet<Data> = {
       },
     },
     {
-      id: 'ASS Echoes of the Fallen Reminder',
-      // CDA Echoes of the Fallen (Spread)
-      type: 'GainsEffect',
-      netRegex: { effectId: 'CDA' },
-      condition: Conditions.targetIsYou(),
-      delaySeconds: (_data, matches) => parseFloat(matches.duration) - 4,
-      response: Responses.spread(),
-    },
-    {
-      id: 'ASS Thunderous Echo Reminder',
-      // CDD Thunderous Echo (Stack)
-      type: 'GainsEffect',
-      netRegex: { effectId: 'CDD' },
-      delaySeconds: (_data, matches) => parseFloat(matches.duration) - 4,
+      id: 'ASS Curse of the Fallen Reminder',
+      type: 'Ability',
+      // Call this when the ring goes off and it's safe to move in.
+      netRegex: { id: ['7660', '7661', '7662'], source: 'Gladiator of Sil\'dih' },
+      suppressSeconds: 1,
       infoText: (data, matches, output) => {
-        if (data.hasLingering)
+        if (!data.isCurseSpreadFirst)
           return output.spread!();
+        if (data.hasLingering)
+          return output.baitPuddle!();
         if (matches.target === data.me)
           return output.stackOnYou!();
         return output.stackOn!({ player: data.ShortName(matches.target) });
       },
       outputStrings: {
+        // TODO: should this also say "In", e.g. "In + Spread" or "Spread (In)"?
+        baitPuddle: {
+          en: 'Bait Puddle',
+          ko: '장판 유도',
+        },
         spread: Outputs.spread,
         stackOnYou: Outputs.stackOnYou,
         stackOn: Outputs.stackOnPlayer,
@@ -1238,9 +1251,66 @@ const triggerSet: TriggerSet<Data> = {
       run: (data, matches) => {
         const id = matches.effectId;
         if (id === 'CDF')
-          ++data.gildedCounter;
+          data.myVisage.gold = parseInt(matches.count);
         else if (id === 'CE0')
-          ++data.silveredCounter;
+          data.myVisage.silver = parseInt(matches.count);
+      },
+    },
+    {
+      id: 'ASS Golden/Silver Flame Collector',
+      // 766F = Golden Flame
+      // 7670 = Silver Flame
+      type: 'StartsUsing',
+      netRegex: { id: ['766F', '7670'], source: 'Hateful Visage' },
+      run: (data, matches) => {
+        const x = Math.round(parseFloat(matches.x));
+        const y = Math.round(parseFloat(matches.y));
+
+        // These mobs have two faces, gold fires in the direction the mob is facing
+        // and silver fires in reverse, so the heading needs to be reversed for silver.
+        const isSilver = matches.id === '7670';
+        const heading = (headingTo4Dir(parseFloat(matches.heading)) + (isSilver ? 2 : 0)) % 4;
+
+        const dir = {
+          north: 0,
+          east: 1,
+          south: 2,
+          west: 3,
+        } as const;
+
+        const mark = (col: number, row: number) => {
+          const visage = data.visageMap[visageMapIdx(col, row)] ??= { gold: 0, silver: 0 };
+          if (isSilver)
+            visage.silver++;
+          else
+            visage.gold++;
+        };
+
+        // Possible values for positions:
+        // x: [-50, -40, -35, -30, -20]
+        // y: [-286, -276, -271, -266, -256]
+
+        if (x === -35) {
+          // vertical
+          const row = Math.round((y + 286) / 10);
+          if (heading === dir.west) {
+            mark(0, row);
+            mark(1, row);
+          } else if (heading === dir.east) {
+            mark(2, row);
+            mark(3, row);
+          }
+        } else if (y === -271) {
+          // horizontal
+          const col = Math.round((x + 50) / 10);
+          if (heading === dir.north) {
+            mark(col, 0);
+            mark(col, 1);
+          } else if (heading === dir.south) {
+            mark(col, 2);
+            mark(col, 3);
+          }
+        }
       },
     },
     {
@@ -1249,46 +1319,210 @@ const triggerSet: TriggerSet<Data> = {
       // 7670 = Silver Flame
       type: 'StartsUsing',
       netRegex: { id: ['766F', '7670'], source: 'Hateful Visage', capture: false },
+      delaySeconds: 0.3,
       suppressSeconds: 1,
       infoText: (data, _matches, output) => {
-        if (data.gildedCounter > 0) {
-          if (data.silveredCounter > 0)
-            return output.bothFates!();
-          return output.gildedFate!();
+        // The four inside corners.
+        const uptimeIdx = [5, 6, 9, 10];
+
+        const target = { gold: data.myVisage.silver, silver: data.myVisage.gold };
+        const targetIsEmpty = target.gold === 0 && target.silver === 0;
+        const squares = targetIsEmpty ? uptimeIdx : [...Array(16).keys()];
+
+        let locStr = output.unknown!();
+        for (const idx of squares) {
+          const visage = data.visageMap[idx] ?? { gold: 0, silver: 0 };
+          if (visage.gold === target.gold && visage.silver === target.silver) {
+            locStr = {
+              0: output.outsideNW!(),
+              1: output.outsideNNW!(),
+              2: output.outsideNNE!(),
+              3: output.outsideNE!(),
+              4: output.outsideWNW!(),
+              5: output.insideNW!(),
+              6: output.insideNE!(),
+              7: output.outsideENE!(),
+              8: output.outsideWSW!(),
+              9: output.insideSW!(),
+              10: output.insideSE!(),
+              11: output.outsideESE!(),
+              12: output.outsideSW!(),
+              13: output.outsideSSW!(),
+              14: output.outsideSSE!(),
+              15: output.outsideSE!(),
+            }[idx] ?? output.unknown!();
+            break;
+          }
         }
-        if (data.silveredCounter > 0)
-          return output.silveredFate!();
-        return output.neitherFate!();
+
+        if (target.silver > 0) {
+          if (target.gold > 0)
+            return output.bothFates!({ loc: locStr });
+          return output.gildedFate!({ loc: locStr });
+        }
+        if (target.gold > 0)
+          return output.silveredFate!({ loc: locStr });
+        return output.neitherFate!({ loc: locStr });
       },
+      run: (data) => data.visageMap = {},
       outputStrings: {
         bothFates: {
-          en: 'Get hit by silver and gold',
-          de: 'Von Silber und Gold treffen lassen',
-          fr: 'Faites-vous toucher par l\'argent et l\'or',
-          ja: '金銀 一個ずつ',
-          ko: '은색 + 금색 맞기',
+          en: 'Get hit by silver and gold (${loc})',
+          de: 'Von Silber und Gold treffen lassen (${loc})', // FIXME
+          fr: 'Faites-vous toucher par l\'argent et l\'or (${loc})', // FIXME
+          ja: '金銀 一個ずつ (${loc})', // FIXME
+          ko: '은색 + 금색 맞기 (${loc})',
         },
         gildedFate: {
-          en: 'Get hit by two silver',
-          de: 'Von 2 Silber treffen lassen',
-          fr: 'Faites-vous toucher par les deux argent',
-          ja: '銀 二つ',
-          ko: '은색 2개 맞기',
+          en: 'Get hit by two silver (${loc})',
+          de: 'Von 2 Silber treffen lassen (${loc})', // FIXME
+          fr: 'Faites-vous toucher par les deux argent (${loc})', // FIXME
+          ja: '銀 二つ (${loc})', // FIXME
+          ko: '은색 2개 맞기 (${loc})',
         },
         silveredFate: {
-          en: 'Get hit by two gold',
-          de: 'Von 2 Gold treffen lassen',
-          fr: 'Faites-vous toucher par les deux or',
-          ja: '金 二つ',
-          ko: '금색 2개 맞기',
+          en: 'Get hit by two gold (${loc})',
+          de: 'Von 2 Gold treffen lassen (${loc})', // FIXME
+          fr: 'Faites-vous toucher par les deux or (${loc})', // FIXME
+          ja: '金 二つ (${loc})', // FIXME
+          ko: '금색 2개 맞기 (${loc})',
         },
         neitherFate: {
-          en: 'Avoid silver and gold',
-          de: 'Vermeide Silber und Gold',
-          fr: 'Évitez l\'argent et l\'or',
-          ja: '顔からのビーム全部回避',
-          ko: '은색 금색 피하기',
+          en: 'Avoid lasers (uptime ${loc})',
+          de: 'Vermeide Silber und Gold (${loc})', // FIXME
+          fr: 'Évitez l\'argent et l\'or (${loc})', // FIXME
+          ja: '顔からのビーム全部回避 (${loc})', // FIXME
+          ko: '레이저 피하기 (업타임 ${loc})',
         },
+        outsideNW: {
+          en: 'NW Corner',
+          de: 'NW Ecke',
+          fr: 'Coin NO',
+          ja: '北西 隅',
+          cn: '左上 (西北) 角',
+          ko: '북서쪽 구석',
+        },
+        outsideNNW: {
+          en: 'NNW Outside',
+          de: 'NNW außen',
+          fr: 'Extérieur NNO',
+          ja: '1列 西の内側',
+          cn: '外侧 上偏左 (北偏西)',
+          ko: '바깥 북쪽 왼칸',
+        },
+        outsideNNE: {
+          en: 'NNE Outside',
+          de: 'NNO außen',
+          fr: 'Extérieur NNE',
+          ja: '1列 東の内側',
+          cn: '外侧 上偏右 (北偏东)',
+          ko: '바깥 북쪽 오른칸',
+        },
+        outsideNE: {
+          en: 'NE Corner',
+          de: 'NO Ecke',
+          fr: 'Coin NE',
+          ja: '北東 隅',
+          cn: '右上 (东北) 角',
+          ko: '북동쪽 구석',
+        },
+        outsideWNW: {
+          en: 'WNW Outside',
+          de: 'WNW außen',
+          fr: 'Extérieur ONO',
+          ja: '2列 西の外側',
+          cn: '外侧 左偏上 (西偏北)',
+          ko: '바깥 서쪽 위칸',
+        },
+        insideNW: {
+          en: 'NW Inside',
+          de: 'NW innen',
+          fr: 'Intérieur NO',
+          ja: '内側 北西',
+          cn: '内侧 左上 (西北)',
+          ko: '안 북서쪽',
+        },
+        insideNE: {
+          en: 'NE Inside',
+          de: 'NO innen',
+          fr: 'Intérieur NE',
+          ja: '内側 北東',
+          cn: '内侧 右上 (东北)',
+          ko: '안 북동쪽',
+        },
+        outsideENE: {
+          en: 'ENE Outside',
+          de: 'ONO außen',
+          fr: 'Extérieur ENE',
+          ja: '2列 東の外側',
+          cn: '外侧 右偏上 (东偏北)',
+          ko: '바깥 동쪽 위칸',
+        },
+        outsideWSW: {
+          en: 'WSW Outside',
+          de: 'WSW außen',
+          fr: 'Extérieur OSO',
+          ja: '3列 西の外側',
+          cn: '外侧 左偏下 (西偏南)',
+          ko: '바깥 서쪽 아래칸',
+        },
+        insideSW: {
+          en: 'SW Inside',
+          de: 'SW innen',
+          fr: 'Intérieur SO',
+          ja: '内側 南西',
+          cn: '内侧 左下 (西南)',
+          ko: '안 남서쪽',
+        },
+        insideSE: {
+          en: 'SE Inside',
+          de: 'SO innen',
+          fr: 'Intérieur SE',
+          ja: '内側 南東',
+          cn: '内侧 右下 (东南)',
+          ko: '안 남동쪽',
+        },
+        outsideESE: {
+          en: 'ESE Outside',
+          de: 'OSO außen',
+          fr: 'Extérieur ESE',
+          ja: '3列 東の外側',
+          cn: '外侧 右偏下 (东偏南)',
+          ko: '바깥 동쪽 아래칸',
+        },
+        outsideSW: {
+          en: 'SW Corner',
+          de: 'SW Ecke',
+          fr: 'Coin SO',
+          ja: '南西 隅',
+          cn: '左下 (西南) 角',
+          ko: '남서쪽 구석',
+        },
+        outsideSSW: {
+          en: 'SSW Outside',
+          de: 'SSW außen',
+          fr: 'Extérieur SSO',
+          ja: '4列 西の内側',
+          cn: '外侧 下偏左 (南偏西)',
+          ko: '바깥 남쪽 왼칸',
+        },
+        outsideSSE: {
+          en: 'SSE Outside',
+          de: 'SSO außen',
+          fr: 'Extérieur SSE',
+          ja: '4列 東の内側',
+          cn: '外侧 下偏右 (南偏东)',
+          ko: '바깥 남쪽 오른칸',
+        },
+        outsideSE: {
+          en: 'SE Corner',
+          de: 'SO Ecke',
+          fr: 'Coin SE',
+          ja: '南東 隅',
+          cn: '右下 (东南) 角',
+          ko: '남동쪽 구석',
+        },
+        unknown: Outputs.unknown,
       },
     },
     {
