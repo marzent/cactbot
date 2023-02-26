@@ -62,9 +62,9 @@ export default class BrowserTTSEngine {
   private initializeAttempts = 0;
 
   constructor(private cactbotLang: Lang, private isRemote: boolean) {
-    if (!isRemote){
+    if (!isRemote) {
       this.engineType = TTSEngineType.GoogleTTS;
-      console.info('BrowserTTS info: running locally in Google TTS mode')
+      console.info('BrowserTTS info: running locally in Google TTS mode');
     } else if (window.speechSynthesis !== undefined) {
       // https://bugs.chromium.org/p/chromium/issues/detail?id=334847
       window.speechSynthesis.getVoices();
@@ -83,8 +83,6 @@ export default class BrowserTTSEngine {
     if (this.initializeAttempts > 5)
       return false;
     this.initializeAttempts++;
-
-
 
     const cactbotLangToSpeechLang = {
       en: 'en-US',
