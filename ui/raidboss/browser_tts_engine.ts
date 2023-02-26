@@ -56,15 +56,36 @@ type TTSItemDictionary = {
 
 export default class BrowserTTSEngine {
   readonly ttsItems: TTSItemDictionary = {};
-  readonly googleTTSLang;
-  private engineType = TTSEngineType.GoogleTTS;
+  private engineType = TTSEngineType.SpeechSynthesis;
   private speechLang?: string;
   private speechVoice?: SpeechSynthesisVoice;
+  private initializeAttempts = 0;
 
-  constructor(lang: Lang, remote: boolean) {
-    this.googleTTSLang = lang === 'cn' ? 'zh' : lang;
-    // TODO: should there be options for different voices here so that
-    // everybody isn't forced into Microsoft Anna?
+  constructor(private cactbotLang: Lang, private isRemote: boolean) {
+    if (!isRemote){
+      this.engineType = TTSEngineType.GoogleTTS;
+      console.info('BrowserTTS info: running locally in Google TTS mode')
+    } else if (window.speechSynthesis !== undefined) {
+      // https://bugs.chromium.org/p/chromium/issues/detail?id=334847
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => this.initializeVoice();
+    } else
+      console.error('BrowserTTS error: no browser support for window.speechSynthesis');
+  }
+
+  initializeVoice(): boolean {
+    if (!this.isRemote)
+      return true;
+    if (window.speechSynthesis === undefined)
+      return false;
+    if (this.speechVoice !== undefined)
+      return true;
+    if (this.initializeAttempts > 5)
+      return false;
+    this.initializeAttempts++;
+
+
+
     const cactbotLangToSpeechLang = {
       en: 'en-US',
       de: 'de-DE',
@@ -75,30 +96,28 @@ export default class BrowserTTSEngine {
       ko: 'ko-KR',
     };
 
-    // figure out what TTS engine type we need
-    if (window.speechSynthesis !== undefined) {
-      if (remote) {
-        window.speechSynthesis.onvoiceschanged = () => {
-          const speechLang = cactbotLangToSpeechLang[lang];
-          const voice = window.speechSynthesis.getVoices().find((voice) =>
-            voice.lang === speechLang
-          );
-          if (voice) {
-            this.speechLang = speechLang;
-            this.speechVoice = voice;
-            window.speechSynthesis.onvoiceschanged = null;
-            this.engineType = TTSEngineType.SpeechSynthesis;
-          } else {
-            console.error('BrowserTTS error: could not find voice');
-          }
-        };
-      }
-    } else {
-      console.error('BrowserTTS error: no browser support for window.speechSynthesis');
+    // figure out what TTS voice type we need
+    const speechLang = cactbotLangToSpeechLang[this.cactbotLang];
+    const voice = window.speechSynthesis.getVoices().find((voice) =>
+      voice.lang.replaceAll('_', '-') === speechLang
+    );
+    if (voice) {
+      this.speechLang = speechLang;
+      this.speechVoice = voice;
+      window.speechSynthesis.onvoiceschanged = null;
+      return true;
     }
+
+    console.error('BrowserTTS error: could not find voice');
+    return false;
   }
 
   play(text: string): void {
+    // TODO: try to address a report of the constructor not finding voices
+    // by lazily looking later.
+    if (!this.initializeVoice())
+      return;
+
     try {
       const ttsItem = this.ttsItems[text];
       ttsItem ? ttsItem.play() : this.playTTS(text);
@@ -125,7 +144,7 @@ export default class BrowserTTSEngine {
   }
 
   playGoogleTTS(text: string): void {
-    const ttsItem = new GoogleTTSItem(text, this.googleTTSLang);
+    const ttsItem = new GoogleTTSItem(text, this.cactbotLang === 'cn' ? 'zh' : this.cactbotLang);
     this.ttsItems[text] = ttsItem;
     ttsItem.play();
   }
