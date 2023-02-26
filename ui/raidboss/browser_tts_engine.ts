@@ -32,7 +32,7 @@ class SpeechTTSItem implements TTSItem {
 class GoogleTTSItem implements TTSItem {
   readonly text: string;
   readonly lang: string;
-  private item: HTMLAudioElement | null = null;
+  private readonly item: HTMLAudioElement | null = null;
 
   constructor(text: string, lang: string) {
     this.text = text;
@@ -56,12 +56,14 @@ type TTSItemDictionary = {
 
 export default class BrowserTTSEngine {
   readonly ttsItems: TTSItemDictionary = {};
-  private engineType = TTSEngineType.SpeechSynthesis;
+  private readonly engineType = TTSEngineType.SpeechSynthesis;
+  private readonly googleTTSLang: string;
   private speechLang?: string;
   private speechVoice?: SpeechSynthesisVoice;
   private initializeAttempts = 0;
 
   constructor(private cactbotLang: Lang, private isRemote: boolean) {
+    this.googleTTSLang = cactbotLang === 'cn' ? 'zh' : cactbotLang;
     if (!isRemote) {
       this.engineType = TTSEngineType.GoogleTTS;
       console.info('BrowserTTS info: running locally in Google TTS mode');
@@ -142,7 +144,7 @@ export default class BrowserTTSEngine {
   }
 
   playGoogleTTS(text: string): void {
-    const ttsItem = new GoogleTTSItem(text, this.cactbotLang === 'cn' ? 'zh' : this.cactbotLang);
+    const ttsItem = new GoogleTTSItem(text, this.googleTTSLang);
     this.ttsItems[text] = ttsItem;
     ttsItem.play();
   }
