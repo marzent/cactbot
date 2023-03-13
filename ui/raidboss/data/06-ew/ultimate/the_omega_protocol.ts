@@ -1198,9 +1198,35 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         farTether: {
           en: 'Blue Tether',
+          de: 'Blaue Verbindung',
         },
         nearTether: {
           en: 'Green Tether',
+          de: 'Grüne Verbindung',
+        },
+      },
+    },
+    {
+      id: 'TOP Swivel Cannon',
+      // 7B95 Swivel Cannon Left-ish
+      // 7B94 Swivel Cannon Right-ish
+      // 9.7s cast
+      type: 'StartsUsing',
+      netRegex: { id: ['7B94', '7B95'], source: 'Omega' },
+      durationSeconds: (_data, matches) => parseFloat(matches.castTime),
+      infoText: (_data, matches, output) => {
+        const isLeft = matches.id === '7B95';
+        // The eye is always clockwise to the beetle
+        return isLeft ? output.awayFromEye!() : output.towardsEye!();
+      },
+      outputStrings: {
+        awayFromEye: {
+          en: 'Away from Eye',
+          de: 'Weg vom Auge',
+        },
+        towardsEye: {
+          en: 'Towards Eye',
+          de: 'Geh zu dem Auge',
         },
       },
     },
@@ -1208,7 +1234,6 @@ const triggerSet: TriggerSet<Data> = {
   timelineReplace: [
     {
       'locale': 'de',
-      'missingTranslations': true,
       'replaceSync': {
         'Alpha Omega': 'Alpha-Omega',
         'Cosmo Meteor': 'Kosmosmeteor',
