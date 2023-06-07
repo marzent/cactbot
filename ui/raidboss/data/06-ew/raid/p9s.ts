@@ -21,8 +21,8 @@ export interface Data extends RaidbossData {
 }
 
 const dualspells = {
-  fireIce: '8154',
-  thunderIce: '8155',
+  fireIce: ['8154', '8184'],
+  thunderIce: ['8155', '8185'],
 };
 
 const headmarkers = {
@@ -175,7 +175,9 @@ const triggerSet: TriggerSet<Data> = {
       type: 'Ability',
       netRegex: { id: '8122', source: 'Kokytos', capture: false },
       alertText: (data, _matches, output) => {
-        if (data.lastDualspellId === dualspells.fireIce)
+        if (data.lastDualspellId === undefined)
+          return output.out!();
+        if (dualspells.fireIce.includes(data.lastDualspellId))
           return output.fireIceOut!();
         return output.out!();
       },
@@ -195,9 +197,11 @@ const triggerSet: TriggerSet<Data> = {
       type: 'Ability',
       netRegex: { id: '8123', source: 'Kokytos', capture: false },
       alertText: (data, _matches, output) => {
-        if (data.lastDualspellId === dualspells.fireIce)
+        if (data.lastDualspellId === undefined)
+          return output.in!();
+        if (dualspells.fireIce.includes(data.lastDualspellId))
           return output.fireIceIn!();
-        if (data.lastDualspellId === dualspells.thunderIce)
+        if (dualspells.thunderIce.includes(data.lastDualspellId))
           return output.thunderIceIn!();
         return output.in!();
       },
@@ -223,7 +227,9 @@ const triggerSet: TriggerSet<Data> = {
       type: 'Ability',
       netRegex: { id: '815C', source: 'Kokytos', capture: false },
       alertText: (data, _matches, output) => {
-        if (data.lastDualspellId === dualspells.thunderIce)
+        if (data.lastDualspellId === undefined)
+          return output.out!();
+        if (dualspells.thunderIce.includes(data.lastDualspellId))
           return output.thunderIceOut!();
         return output.out!();
       },
@@ -595,6 +601,28 @@ const triggerSet: TriggerSet<Data> = {
       type: 'StartsUsing',
       netRegex: { id: '81BB', source: 'Kokytos', capture: false },
       run: (data) => data.seenChimericSuccession = true,
+    },
+    {
+      id: 'P9S Front Firestrikes',
+      type: 'StartsUsing',
+      netRegex: { id: '878E', source: 'Kokytos', capture: false },
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: {
+          en: 'Charge => Stay',
+        },
+      },
+    },
+    {
+      id: 'P9S Rear Firestrikes',
+      type: 'StartsUsing',
+      netRegex: { id: '878F', source: 'Kokytos', capture: false },
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: {
+          en: 'Charge => Run Through',
+        },
+      },
     },
   ],
   timelineReplace: [
