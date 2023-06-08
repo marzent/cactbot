@@ -1,3 +1,4 @@
+import Conditions from '../../../../../resources/conditions';
 import Outputs from '../../../../../resources/outputs';
 import ZoneId from '../../../../../resources/zone_id';
 import { RaidbossData } from '../../../../../types/data';
@@ -49,7 +50,19 @@ const headmarkers = {
   chains: '0061',
 } as const;
 
-const wingIds: string[] = Object.values(wings);
+const limitCutMap: { [id: string]: number } = {
+  [headmarkers.limitCut1]: 1,
+  [headmarkers.limitCut2]: 2,
+  [headmarkers.limitCut3]: 3,
+  [headmarkers.limitCut4]: 4,
+  [headmarkers.limitCut5]: 5,
+  [headmarkers.limitCut6]: 6,
+  [headmarkers.limitCut7]: 7,
+  [headmarkers.limitCut8]: 8,
+} as const;
+
+const limitCutIds: readonly string[] = Object.keys(limitCutMap);
+const wingIds: readonly string[] = Object.values(wings);
 
 const getHeadmarkerId = (data: Data, matches: NetMatches['HeadMarker']) => {
   if (data.decOffset === undefined) {
@@ -104,6 +117,7 @@ const triggerSet: TriggerSet<Data> = {
         data.expectedFirstHeadmarker = first;
       },
     },
+    // --------------------- Phase 1 ------------------------
     {
       id: 'P12S First Wing',
       type: 'StartsUsing',
@@ -179,18 +193,22 @@ const triggerSet: TriggerSet<Data> = {
         swap: {
           en: 'Swap',
           de: 'Wechseln',
+          fr: 'Swap',
         },
         stay: {
           en: 'Stay',
           de: 'bleib Stehen',
+          fr: 'Restez',
         },
         secondWingCallStay: {
           en: '(stay)',
           de: '(bleib Stehen)',
+          fr: '(restez)',
         },
         secondWingCallSwap: {
           en: '(swap)',
           de: '(Wechseln)',
+          fr: '(swap)',
         },
         allThreeWings: {
           en: '${first} => ${second} => ${third}',
@@ -219,10 +237,12 @@ const triggerSet: TriggerSet<Data> = {
         swap: {
           en: 'Swap',
           de: 'Wechseln',
+          fr: 'Swap',
         },
         stay: {
           en: 'Stay',
           de: 'bleib Stehen',
+          fr: 'Restez',
         },
       },
     },
@@ -236,10 +256,12 @@ const triggerSet: TriggerSet<Data> = {
         partyOutTanksIn: {
           en: 'Party Out (Tanks In)',
           de: 'Gruppe Raus (Tanks Rein)',
+          fr: 'Équipe à l\'extérieur (Tanks à l\'intérieur)',
         },
         tanksInPartyOut: {
           en: 'Tanks In (Party Out)',
           de: 'Gruppe Rein (Tanks Raus)',
+          fr: 'Tanks à l\'intérieur (Équipe à l\'extérieur',
         },
       },
     },
@@ -253,13 +275,42 @@ const triggerSet: TriggerSet<Data> = {
         partyInTanksOut: {
           en: 'Party In (Tanks Out)',
           de: 'Gruppe Rein (Tanks Raus)',
+          fr: 'Équipe à l\'intérieur (Tanks à l\'extérieur)',
         },
         tanksInPartyOut: {
           en: 'Tanks Out (Party In)',
           de: 'Tanks Raus (Gruppe Rein)',
+          fr: 'Tanks à l\'extérieur (Équipe à l\'intérieur',
         },
       },
     },
+    {
+      id: 'P12S Limit Cut',
+      type: 'HeadMarker',
+      netRegex: {},
+      condition: Conditions.targetIsYou(),
+      durationSeconds: 20,
+      alertText: (data, matches, output) => {
+        const id = getHeadmarkerId(data, matches);
+        if (!limitCutIds.includes(id))
+          return;
+        const num = limitCutMap[id];
+        if (num === undefined)
+          return;
+        return output.text!({ num: num });
+      },
+      outputStrings: {
+        text: {
+          en: '${num}',
+          de: '${num}',
+          fr: '${num}',
+          ja: '${num}',
+          cn: '${num}',
+          ko: '${num}',
+        },
+      },
+    },
+    // --------------------- Phase 2 ------------------------
     {
       id: 'P12S Geocentrism Vertical',
       type: 'StartsUsing',
@@ -289,6 +340,18 @@ const triggerSet: TriggerSet<Data> = {
     },
   ],
   timelineReplace: [
+    {
+      'locale': 'en',
+      'replaceSync': {
+        'Astral Glow/Umbral Glow': 'Astral/Umbral Glow',
+        'Astral Advance/Umbral Advance': 'Astral/Umbral Advance',
+        'Superchain Coil/Superchain Burst': 'Superchain Coil/Burst',
+        'Apodialogos/Peridialogos': 'Apodia/Peridia',
+        'Theos\'s Saltire/Theos\'s Cross': 'Saltire/Cross',
+        'Astral Impact/Umbral Impact': 'Astral/Umbral Impact',
+        'Astral Advent/Umbral Advent': 'Astral/Umbral Advent',
+      },
+    },
     {
       'locale': 'de',
       'missingTranslations': true,

@@ -356,6 +356,8 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         text: {
           en: 'First Orb ${dir} => ${rotation}',
+          de: 'Erster Orb ${dir} => ${rotation}',
+          fr: 'Premier orbe ${dir} => ${rotation}',
         },
         clockwise: Outputs.clockwise,
         counterclock: Outputs.counterclockwise,
@@ -415,9 +417,13 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         dash: {
           en: 'Bait dash',
+          de: 'Sprung ködern',
+          fr: 'Encaissez le saut',
         },
         soak: {
           en: 'Soak tower',
+          de: 'Im Turm stehen',
+          fr: 'Prenez votre tour',
         },
       },
     },
@@ -448,9 +454,13 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         dash: {
           en: 'Bait dash',
+          de: 'Sprung ködern',
+          fr: 'Encaissez le saut',
         },
         soak: {
           en: 'Soak tower',
+          de: 'Im Turm stehen',
+          fr: 'Prenez votre tour',
         },
       },
     },
@@ -610,6 +620,8 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         text: {
           en: 'Charge => Stay',
+          de: 'Sprung => Stehen bleiben',
+          fr: 'Saut => Restez',
         },
       },
     },
@@ -621,6 +633,8 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         text: {
           en: 'Charge => Run Through',
+          de: 'Sprung => Geh durch den Boss',
+          fr: 'Saut => Traversez le boss',
         },
       },
     },
