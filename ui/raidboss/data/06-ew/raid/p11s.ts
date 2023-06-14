@@ -1,3 +1,4 @@
+import Outputs from '../../../../../resources/outputs';
 import { Responses } from '../../../../../resources/responses';
 import ZoneId from '../../../../../resources/zone_id';
 import { RaidbossData } from '../../../../../types/data';
@@ -289,32 +290,32 @@ const triggerSet: TriggerSet<Data> = {
         // cactbot-builtin-response
         output.responseOutputStrings = {
           lightNear: {
-            en: 'Light Near w/${player}',
-            de: 'Licht Nahe w/${player}',
-            fr: 'Lumière proche avec ${player}',
-            cn: '光靠近 => ${player}',
-            ko: '빛 가까이 +${player}',
+            en: 'Light Near w/${player} (${role})',
+            de: 'Licht Nahe w/${player} (${role})',
+            fr: 'Lumière proche avec ${player} (${role})',
+            cn: '光靠近 => ${player} (${role})',
+            ko: '빛 가까이 +${player} (${role})',
           },
           lightFar: {
-            en: 'Light Far w/${player}',
-            de: 'Licht Entfernt w/${player}',
-            fr: 'Lumière éloignée avec ${player}',
-            cn: '光远离 => ${player}',
-            ko: '빛 멀리 +${player}',
+            en: 'Light Far w/${player} (${role})',
+            de: 'Licht Entfernt w/${player} (${role})',
+            fr: 'Lumière éloignée avec ${player} (${role})',
+            cn: '光远离 => ${player} (${role})',
+            ko: '빛 멀리 +${player} (${role})',
           },
           darkNear: {
-            en: 'Dark Near w/${player}',
-            de: 'Dunkel Nahe w/${player}',
-            fr: 'Sombre proche avec ${player}',
-            cn: '暗靠近 => ${player}',
-            ko: '어둠 가까이 +${player}',
+            en: 'Dark Near w/${player} (${role})',
+            de: 'Dunkel Nahe w/${player} (${role})',
+            fr: 'Sombre proche avec ${player} (${role})',
+            cn: '暗靠近 => ${player} (${role})',
+            ko: '어둠 가까이 +${player} (${role})',
           },
           darkFar: {
-            en: 'Dark Far w/${player}',
-            de: 'Dunkel Entfernt w/${player}',
-            fr: 'Sombre éloigné avec ${player}',
-            cn: '暗远离 => ${player}',
-            ko: '어둠 멀리 +${player}',
+            en: 'Dark Far w/${player} (${role})',
+            de: 'Dunkel Entfernt w/${player} (${role})',
+            fr: 'Sombre éloigné avec ${player} (${role})',
+            cn: '暗远离 => ${player} (${role})',
+            ko: '어둠 멀리 +${player} (${role})',
           },
           otherNear: {
             en: 'Other Near: ${player1}, ${player2}',
@@ -328,6 +329,10 @@ const triggerSet: TriggerSet<Data> = {
             fr: 'Autre éloigné : ${player1}, ${player2}',
             ko: '다른 멀리: ${player1}, ${player2}',
           },
+          tank: Outputs.tank,
+          healer: Outputs.healer,
+          dps: Outputs.dps,
+          unknown: Outputs.unknown,
         };
 
         const myColor = data.lightDarkDebuff[data.me];
@@ -346,19 +351,29 @@ const triggerSet: TriggerSet<Data> = {
           return;
         }
 
+        let myBuddyRole;
+        if (data.party.isDPS(myBuddy))
+          myBuddyRole = output.dps!();
+        else if (data.party.isTank(myBuddy))
+          myBuddyRole = output.tank!();
+        else if (data.party.isHealer(myBuddy))
+          myBuddyRole = output.healer!();
+        else
+          myBuddyRole = output.unknown!();
+
         const myBuddyShort = data.ShortName(myBuddy);
 
         let alertText: string;
         if (myLength === 'near') {
           if (myColor === 'light')
-            alertText = output.lightNear!({ player: myBuddyShort });
+            alertText = output.lightNear!({ player: myBuddyShort, role: myBuddyRole });
           else
-            alertText = output.darkNear!({ player: myBuddyShort });
+            alertText = output.darkNear!({ player: myBuddyShort, role: myBuddyRole });
         } else {
           if (myColor === 'light')
-            alertText = output.lightFar!({ player: myBuddyShort });
+            alertText = output.lightFar!({ player: myBuddyShort, role: myBuddyRole });
           else
-            alertText = output.darkFar!({ player: myBuddyShort });
+            alertText = output.darkFar!({ player: myBuddyShort, role: myBuddyRole });
         }
 
         let infoText: string | undefined = undefined;
@@ -416,7 +431,6 @@ const triggerSet: TriggerSet<Data> = {
     },
     {
       'locale': 'de',
-      'missingTranslations': true,
       'replaceSync': {
         'Arcane Cylinder': 'arkan(?:e|er|es|en) Zylinder',
         'Arcane Sphere': 'arkan(?:e|er|es|en) Körper',
@@ -433,6 +447,8 @@ const triggerSet: TriggerSet<Data> = {
         'Dark Perimeter': 'Dunkler Kreis',
         'Dark and Light': 'Licht-Dunkel-Schlichtung',
         'Dike': 'Dike',
+        'Dismissal Overruling': 'Verweisungsbefehl',
+        'Divisive Overruling': 'Auflösungsbefehl',
         'Divisive Ruling': 'Auflösungsbeschluss',
         'Emissary\'s Will': 'Schlichtung',
         'Eunomia': 'Eunomia',
@@ -440,13 +456,16 @@ const triggerSet: TriggerSet<Data> = {
         'Heart of Judgment': 'Urteilsschlag',
         'Inevitable Law': 'Langer Arm des Rechts',
         'Inevitable Sentence': 'Langer Arm der Strafe',
+        'Jury Overruling': 'Schöffenbefehl',
         'Letter of the Law': 'Phantomgesetz',
         'Lightburst': 'Lichtstoß',
         'Lightstream': 'Lichtstrahl',
         'Shadowed Messengers': 'Boten des Schattens',
         'Styx': 'Styx',
+        'Twofold Revelation': 'Zweifache Enthüllung',
         'Ultimate Verdict': 'Letzte Schlichtung',
         'Unlucky Lot': 'Magieexplosion',
+        'Upheld Overruling': 'Erhebungsbefehl',
         'Upheld Ruling': 'Erhebungsbeschluss',
       },
     },
@@ -467,6 +486,8 @@ const triggerSet: TriggerSet<Data> = {
         'Dark Perimeter': 'Cercle ténébreux',
         'Dark and Light': 'Médiation Lumière-Ténèbres',
         'Dike': 'Diké',
+        'Dismissal Overruling': 'Rejet et annulation',
+        'Divisive Overruling': 'Partage et annulation',
         'Divisive Ruling': 'Partage et décision',
         'Emissary\'s Will': 'Médiation',
         'Eunomia': 'Eunomia',
@@ -474,13 +495,16 @@ const triggerSet: TriggerSet<Data> = {
         'Heart of Judgment': 'Onde pénale',
         'Inevitable Law': 'Ligne additionnelle',
         'Inevitable Sentence': 'Peine complémentaire',
+        'Jury Overruling': 'Jugement et annulation',
         'Letter of the Law': 'Fantasmagorie des lois',
         'Lightburst': 'Éclat de lumière',
         'Lightstream': 'Flux lumineux',
         'Shadowed Messengers': 'Fantasmagorie des préceptes',
         'Styx': 'Styx',
+        'Twofold Revelation': 'Double déploiement arcanique',
         'Ultimate Verdict': 'Médiation ultime',
         'Unlucky Lot': 'Déflagration éthérée',
+        'Upheld Overruling': 'Maintien et annulation',
         'Upheld Ruling': 'Maintien et décision',
       },
     },
@@ -501,6 +525,8 @@ const triggerSet: TriggerSet<Data> = {
         'Dark Perimeter': 'ダークサークル',
         'Dark and Light': '光と闇の調停',
         'Dike': 'ディケー',
+        'Dismissal Overruling': 'ディスミサル＆オーバールール',
+        'Divisive Overruling': 'ディバイド＆オーバールール',
         'Divisive Ruling': 'ディバイド＆ルーリング',
         'Emissary\'s Will': '調停',
         'Eunomia': 'エウノミアー',
@@ -508,13 +534,16 @@ const triggerSet: TriggerSet<Data> = {
         'Heart of Judgment': '刑律の波動',
         'Inevitable Law': 'アディショナルロウ',
         'Inevitable Sentence': 'アディショナルセンテンス',
+        'Jury Overruling': 'ジューリー＆オーバールール',
         'Letter of the Law': '理法の幻奏',
         'Lightburst': 'ライトバースト',
         'Lightstream': 'ライトストリーム',
         'Shadowed Messengers': '戒律の幻奏',
         'Styx': 'ステュクス',
+        'Twofold Revelation': '二種魔法陣展開',
         'Ultimate Verdict': '究極調停',
         'Unlucky Lot': '魔爆',
+        'Upheld Overruling': 'アップヘルド＆オーバールール',
         'Upheld Ruling': 'アップヘルド＆ルーリング',
       },
     },
