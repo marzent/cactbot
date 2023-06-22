@@ -8,14 +8,10 @@ import { NetMatches } from '../../../../../types/net_matches';
 import { TriggerSet } from '../../../../../types/trigger';
 
 // TODO: north / south laser add call for first Paradeigma
-// TODO: second paradeigma tether/tower debuff?
 // TODO: laser add call (inner west / inner east?) for second Paradeigma
 // TODO: glaukopis tank swap call
 // TODO: glaukopis tank swap after 2nd hit (if different person took both)
-// TODO: tether/tower/saltire/cross debuffs for third Paradeigma (and partners for towers?)
-// TODO: light/dark tower call for third Paradeigma (+ taking towers, baiting adds, etc)
 // TODO: add phase dash calls?? (maybe this is overkill)
-// TODO: Superchain 1 debuff triggers (maybe combine with existing triggers?)
 // TODO: Superchain 2B
 // TODO: final Sample safe spot
 
@@ -61,6 +57,53 @@ const superchainNpcBaseIdMap: Record<SuperchainMechanic, string> = {
   partners: '16180',
 } as const;
 
+const engravementLabelMapAsConst = {
+  DF8: 'lightTilt',
+  DF9: 'darkTilt',
+  DFB: 'lightTower',
+  DFC: 'darkTower',
+  DFD: 'lightBeam',
+  DFE: 'darkBeam',
+  DFF: 'crossMarked',
+  E00: 'xMarked',
+} as const;
+type EngravementLabel = typeof engravementLabelMapAsConst[keyof typeof engravementLabelMapAsConst];
+const engravementLabelMap: { [effectId: string]: EngravementLabel } = engravementLabelMapAsConst;
+type EngravementIdMap = Record<EngravementLabel, string>;
+const engravementIdMap: EngravementIdMap = Object.fromEntries(
+  Object.entries(engravementLabelMap).map(([k, v]) => [v, k]),
+) as EngravementIdMap;
+
+const engravementBeamIds: readonly string[] = [
+  engravementIdMap.lightBeam,
+  engravementIdMap.darkBeam,
+];
+const engravementTowerIds: readonly string[] = [
+  engravementIdMap.lightTower,
+  engravementIdMap.darkTower,
+];
+const engravementTiltIds: readonly string[] = [
+  engravementIdMap.lightTilt,
+  engravementIdMap.darkTilt,
+];
+const engravement3TheosSoulIds: readonly string[] = [
+  engravementIdMap.crossMarked,
+  engravementIdMap.xMarked,
+];
+
+type AnthroposTether = 'light' | 'dark';
+const anthroposTetherMap: { [id: string]: AnthroposTether } = {
+  '00E9': 'light', // needs stretching
+  '00EA': 'dark', // needs stretching
+  '00FA': 'light', // adequately stretched
+  '00FB': 'dark', // adequately stretched
+};
+
+const tetherAbilityToTowerMap: { [id: string]: EngravementLabel } = {
+  '82F1': 'lightTower',
+  '82F2': 'darkTower',
+};
+
 const headmarkers = {
   ...wings,
   // vfx/lockon/eff/tank_laser_5sec_lockon_c0a1.avfx
@@ -98,6 +141,17 @@ const limitCutIds: readonly string[] = Object.keys(limitCutMap);
 const wingIds: readonly string[] = Object.values(wings);
 const superchainNpcBaseIds: readonly string[] = Object.values(superchainNpcBaseIdMap);
 
+const pangenesisEffects = {
+  stableSystem: 'E22',
+  unstableFactor: 'E09',
+  lightTilt: 'DF8',
+  darkTilt: 'DF9',
+} as const;
+
+const pangenesisEffectIds: readonly string[] = Object.values(pangenesisEffects);
+
+type PangenesisRole = 'shortLight' | 'shortDark' | 'longLight' | 'longDark' | 'one' | 'not';
+
 const getHeadmarkerId = (data: Data, matches: NetMatches['HeadMarker']) => {
   if (data.decOffset === undefined) {
     if (data.expectedFirstHeadmarker === undefined) {
@@ -114,6 +168,13 @@ export interface Data extends RaidbossData {
   expectedFirstHeadmarker?: string;
   isDoorBoss: boolean;
   phase?: 'superchain1' | 'palladion' | 'superchain2a' | 'superchain2b';
+  engravementCounter: number;
+  engravement1Towers: string[];
+  engravement2MyLabel?: EngravementLabel;
+  engravement3TowerType?: 'lightTower' | 'darkTower';
+  engravement3TowerPlayers: string[];
+  engravement3TetherPlayers: { [name: string]: AnthroposTether };
+  engravement3TethersSide?: 'east' | 'west';
   wingCollect: string[];
   wingCalls: ('swap' | 'stay')[];
   superchainCollect: NetMatches['AddedCombatant'][];
@@ -123,6 +184,11 @@ export interface Data extends RaidbossData {
   superchain2aFirstDir?: 'north' | 'south';
   superchain2aSecondDir?: 'north' | 'south';
   superchain2aSecondMech?: 'protean' | 'partners';
+  pangenesisDebuffsCalled?: boolean;
+  pangenesisRole: { [name: string]: PangenesisRole };
+  pangenesisTowerCount: number;
+  lastPangenesisTowerColor?: 'light' | 'dark';
+  pangenesisCurrentColor?: 'light' | 'dark';
 }
 
 const triggerSet: TriggerSet<Data> = {
@@ -132,10 +198,16 @@ const triggerSet: TriggerSet<Data> = {
   initData: () => {
     return {
       isDoorBoss: true,
+      engravementCounter: 0,
+      engravement1Towers: [],
+      engravement3TowerPlayers: [],
+      engravement3TetherPlayers: {},
       wingCollect: [],
       wingCalls: [],
       superchainCollect: [],
       whiteFlameCounter: 0,
+      pangenesisRole: {},
+      pangenesisTowerCount: 0,
     };
   },
   triggers: [
@@ -527,6 +599,404 @@ const triggerSet: TriggerSet<Data> = {
       },
     },
     {
+      id: 'P12S Engravement of Souls Tracker',
+      type: 'Ability',
+      netRegex: { id: '8305', source: 'Athena', capture: false },
+      run: (data) => ++data.engravementCounter,
+    },
+    // In Engravement 1 (Paradeigma 2), 2 players receive lightTower and 2 players receive darkTower.
+    // When debuffs expire and towers drop, their debuff changes to lightTilt or darkTilt (same as tower color).
+    // At the same time the towers drop, the 4 tethered players receive lightTilt or darkTilt depending on their tether color.
+    {
+      id: 'P12S Engravement 1 Tower Drop',
+      type: 'GainsEffect',
+      netRegex: { effectId: engravementTowerIds },
+      condition: (data) => data.engravementCounter === 1,
+      durationSeconds: (_data, matches) => parseFloat(matches.duration),
+      alertText: (data, matches, output) => {
+        data.engravement1Towers.push(matches.target);
+        if (data.me === matches.target) {
+          if (matches.effectId === engravementIdMap.lightTower)
+            return output.lightTower!();
+          return output.darkTower!();
+        }
+      },
+      outputStrings: {
+        lightTower: {
+          en: 'Drop light tower',
+        },
+        darkTower: {
+          en: 'Drop dark tower',
+        },
+      },
+    },
+    {
+      id: 'P12S Engravement 1 Tower Soak',
+      type: 'GainsEffect',
+      netRegex: { effectId: engravementTiltIds },
+      condition: (data, matches) => data.engravementCounter === 1 && data.me === matches.target,
+      suppressSeconds: 5, // avoid second (incorrect) alert when debuff switches from soaking tower
+      alertText: (data, matches, output) => {
+        if (!data.engravement1Towers.includes(data.me)) {
+          // Did not drop a tower, so needs to soak one.
+          if (matches.effectId === engravementIdMap.lightTilt)
+            return output.lightTilt!();
+          return output.darkTilt!();
+        }
+      },
+      outputStrings: {
+        lightTilt: {
+          en: 'Soak dark tower',
+          cn: '踩暗塔',
+        },
+        darkTilt: {
+          en: 'Soak light tower',
+          cn: '踩光塔',
+        },
+      },
+    },
+    // In Engravement 2 (Superchain 1), all supports or DPS will receive lightTilt and darkTilt (2 each).
+    // All 4 also receive Heavensflame Soul.
+    // The other role group will receive lightTower, darkTower, lightBeam, and darkBeam.
+    // To resolve the Beams during the 2nd orb, lightBeam needs to stack with darkTower and both darkTilts, and vice versa.
+    // After the 3rd orb, lightTower and darkTower will drop their towers, and  darkBeam and lightBeam (respectively) will soak them.
+    // The four Heavensflame players all simultaneously need to spread to drop their AoEs.
+    // Debuffs do change based on mechanic resolution, which can complicate things:
+    // - When a lightTilt player soaks a dark beam, their debuff will change to darkTilt, and vice versa.
+    // - Once the beams detonate, the lightBeam debuff disappears and is replaced with lightTilt (same with dark).
+    // So only use the initial debuff to resolve the mechanic, and use a long suppress to avoid incorrect later alerts.
+    {
+      id: 'P12S Engravement 2 Debuff',
+      type: 'GainsEffect',
+      netRegex: {
+        effectId: [...engravementBeamIds, ...engravementTowerIds, ...engravementTiltIds],
+      },
+      condition: (data, matches) => data.engravementCounter === 2 && data.me === matches.target,
+      suppressSeconds: 30,
+      run: (data, matches) => data.engravement2MyLabel = engravementLabelMap[matches.effectId],
+    },
+    {
+      id: 'P12S Engravement 2 Heavensflame Soul Early',
+      type: 'GainsEffect',
+      netRegex: { effectId: 'DFA' },
+      condition: (data, matches) => data.engravementCounter === 2 && data.me === matches.target,
+      delaySeconds: 6.5, // display a reminder as the player is moving into the second orb stack groups
+      infoText: (_data, _matches, output) => output.spreadLater!(),
+      outputStrings: {
+        spreadLater: {
+          en: '(spread later)',
+          cn: '（稍后分散）',
+        },
+      },
+    },
+    // darkTower/lightTower are 20s, but lightBeam/darkBeam are shorter and swap to lightTilt/darkTilt before the mechanic resolves.
+    // So use a fixed delay rather than one based on effect duration.
+    // TODO: Add additional logic/different outputs if oopsies happen?  (E.g. soak player hit by tower drop -> debuff change, backup soak by spread player, etc.)
+    // TODO: Combine this with the second part (in/out) of Superchain I Third Mechanic?
+    {
+      id: 'P12S Engravement 2 Tower Drop/Soak Reminder',
+      type: 'GainsEffect',
+      netRegex: { effectId: [...engravementTowerIds, ...engravementBeamIds] },
+      condition: (data, matches) => data.engravementCounter === 2 && data.me === matches.target,
+      delaySeconds: 16,
+      alertText: (_data, matches, output) => {
+        const engraveLabel = engravementLabelMap[matches.effectId];
+        if (engraveLabel === undefined)
+          return;
+        return output[engraveLabel]!();
+      },
+      outputStrings: {
+        lightBeam: {
+          en: 'Soak Dark Tower',
+          cn: '踩暗塔',
+        },
+        darkBeam: {
+          en: 'Soak Light Tower',
+          cn: '踩光塔',
+        },
+        lightTower: {
+          en: 'Drop Light Tower',
+          cn: '放光塔',
+        },
+        darkTower: {
+          en: 'Drop Dark Tower',
+          cn: '放暗塔',
+        },
+      },
+    },
+    {
+      id: 'P12S Engravement 2 Heavensflame Soul',
+      type: 'GainsEffect',
+      netRegex: { effectId: 'DFA' },
+      condition: (data, matches) => data.engravementCounter === 2 && data.me === matches.target,
+      delaySeconds: (_data, matches) => parseFloat(matches.duration) - 4,
+      response: Responses.spread('alert'),
+    },
+    // In Engravement 3 (Paradeigma 3), 2 support players will both receive either lightTower or darkTower.
+    // The other 2 support players receive a '+'/Cross (DFF) or 'x'/Saltire (E00) debuff.
+    // Because of platform separation during the mechanic, the '+' and 'x' players must soak the far north/south towers,
+    // while the lightTower or darkTower players must soak the middle towers (so they can then drop their towers for DPS to soak).
+    // All DPS receive tethers (2 light, 2 dark), and they receive corresponding lightTilt/darkTilt when tethers resolve.
+    // If the support players receive lightTower, the darkTilt DPS must soak those towers, or vice versa.
+    // While the light & dark towers are being soaked, the '+' and 'x' supports and  other 2 DPS must bait the adds' line cleaves.
+    {
+      id: 'P12S Engravement 3 Theos Initial',
+      type: 'GainsEffect',
+      netRegex: { effectId: engravement3TheosSoulIds },
+      condition: (data, matches) => data.engravementCounter === 3 && data.me === matches.target,
+      alertText: (_data, matches, output) => {
+        const engraveLabel = engravementLabelMap[matches.effectId];
+        if (engraveLabel === undefined)
+          return;
+        return output[engraveLabel]!();
+      },
+      outputStrings: {
+        crossMarked: {
+          en: '\'+\' AoE on You',
+          cn: '十 点名',
+        },
+        xMarked: {
+          en: '\'x\' AoE on You',
+          cn: '\'x\' 点名',
+        },
+      },
+    },
+    {
+      id: 'P12S Engravement 3 Theos Drop AoE',
+      type: 'GainsEffect',
+      netRegex: { effectId: engravement3TheosSoulIds },
+      condition: (data, matches) => data.engravementCounter === 3 && data.me === matches.target,
+      delaySeconds: (_data, matches) => parseFloat(matches.duration) - 4,
+      alertText: (_data, matches, output) => {
+        const engraveLabel = engravementLabelMap[matches.effectId];
+        if (engraveLabel === undefined)
+          return;
+        return output[engraveLabel]!();
+      },
+      outputStrings: {
+        crossMarked: {
+          en: 'Drop \'+\' AoE',
+          cn: '放置 十 点名',
+        },
+        xMarked: {
+          en: 'Drop \'x\' AoE',
+          cn: '放置 \'x\' 点名',
+        },
+      },
+    },
+    {
+      id: 'P12S Engravement 3 Theos Bait Adds',
+      type: 'GainsEffect',
+      netRegex: { effectId: engravement3TheosSoulIds },
+      condition: (data, matches) => data.engravementCounter === 3 && data.me === matches.target,
+      delaySeconds: (_data, matches) => parseFloat(matches.duration),
+      alertText: (_data, _matches, output) => output.baitCleave!(),
+      outputStrings: {
+        baitCleave: {
+          en: 'Bait line cleave',
+        },
+      },
+    },
+    {
+      id: 'P12S Engravement 3 Towers Collect',
+      type: 'GainsEffect',
+      netRegex: { effectId: engravementTowerIds },
+      condition: (data) => data.engravementCounter === 3,
+      run: (data, matches) => {
+        data.engravement3TowerPlayers.push(matches.target);
+        data.engravement3TowerType = matches.effectId === engravementIdMap.lightTower
+          ? 'lightTower'
+          : 'darkTower';
+      },
+    },
+    {
+      id: 'P12S Engravement 3 Paradeigma Adds Collect',
+      type: 'StartsUsing',
+      netRegex: { id: ['82F1', '82F2'], source: 'Anthropos' },
+      condition: (data) => data.engravementCounter === 3,
+      run: (data, matches) => {
+        // 82F1 = Searing Radiance (used on light tethers)
+        // 82F2 = Shadowsear (used on dark tethers)
+        // If the Anthroposes (Anthropi?) casting 82F1 are east, e.g., the tethered players will be west when the mechanic resolves.
+        // lightTower/darkTower is applied ~1.1s before these abilities.
+        const tetherPlayerSide = parseFloat(matches.x) > 100 ? 'west' : 'east';
+        if (tetherAbilityToTowerMap[matches.id] === data.engravement3TowerType)
+          data.engravement3TethersSide = tetherPlayerSide;
+      },
+    },
+    {
+      id: 'P12S Engravement 3 Towers Initial',
+      type: 'GainsEffect',
+      netRegex: { effectId: engravementTowerIds },
+      condition: (data, matches) => data.engravementCounter === 3 && data.me === matches.target,
+      delaySeconds: 0.3,
+      alertText: (data, _matches, output) => {
+        let towerColor = output.unknown!();
+        if (data.engravement3TowerType !== undefined)
+          towerColor = data.engravement3TowerType === 'lightTower'
+            ? output.light!()
+            : output.dark!();
+        const partner =
+          data.ShortName(data.engravement3TowerPlayers.find((name) => name !== data.me)) ??
+            output.unknown!();
+        return output.towerOnYou!({ color: towerColor, partner: partner });
+      },
+      outputStrings: {
+        towerOnYou: {
+          en: '${color} Tower on You (w/ ${partner})',
+          cn: '${color} 塔点名 (+ ${partner})',
+        },
+        light: {
+          en: 'Light',
+          cn: '光',
+        },
+        dark: {
+          en: 'Dark',
+          cn: '暗',
+        },
+        unknown: Outputs.unknown,
+      },
+    },
+    {
+      id: 'P12S Engravement 3 Paradeigma Tethers Collect',
+      type: 'Tether',
+      // Because tethers can spawn unstretched or already satisfied, we need to catch all 4 states
+      netRegex: { id: Object.keys(anthroposTetherMap), source: 'Anthropos' },
+      condition: (data) => data.engravementCounter === 3,
+      run: (data, matches) => {
+        const tetherType = anthroposTetherMap[matches.id];
+        if (tetherType === undefined)
+          return;
+        data.engravement3TetherPlayers[matches.target] = tetherType;
+      },
+    },
+    {
+      id: 'P12S Engravement 3 Paradeigma Early Tower Color',
+      type: 'Tether',
+      // Because tethers can spawn unstretched or already satisfied, we need to trigger on all 4 states
+      netRegex: { id: Object.keys(anthroposTetherMap), source: 'Anthropos' },
+      condition: (data, matches) => data.engravementCounter === 3 && data.me === matches.target,
+      suppressSeconds: 10,
+      infoText: (data, _matches, output) => {
+        let towerColor = output.unknown!();
+        if (data.engravement3TowerType !== undefined)
+          towerColor = data.engravement3TowerType === 'lightTower'
+            ? output.light!()
+            : output.dark!();
+        return output.towersLater!({ color: towerColor });
+      },
+      outputStrings: {
+        towersLater: {
+          en: '${color} towers (later)',
+          cn: '稍后 ${color} 塔',
+        },
+        light: {
+          en: 'Light',
+          cn: '光',
+        },
+        dark: {
+          en: 'Dark',
+          cn: '暗',
+        },
+        unknown: Outputs.unknown,
+      },
+    },
+    // If player starts with darkTower/lightTower, they will start east or west to soak the inside towers.
+    // Use their relative position at the time 8312 (Shock) is used (the initial tower soak) to determine where they should drop their tower.
+    {
+      id: 'P12S Engravement 3 Towers Drop Location',
+      type: 'Ability',
+      netRegex: { id: '8312', source: 'Athena' },
+      condition: (data, matches) =>
+        data.engravementCounter === 3 && data.me === matches.target &&
+        data.engravement3TowerPlayers.includes(data.me),
+      alertText: (data, matches, output) => {
+        let towerColor = output.unknown!();
+        if (data.engravement3TowerType !== undefined)
+          towerColor = data.engravement3TowerType === 'lightTower'
+            ? output.light!()
+            : output.dark!();
+
+        if (data.engravement3TethersSide === undefined)
+          return output.dropTower!({ color: towerColor, spot: output.unknown!() });
+
+        const mySide = parseFloat(matches.x) > 100 ? 'east' : 'west';
+        const towerSpot = mySide === data.engravement3TethersSide
+          ? output.corner!()
+          : output.platform!();
+        return output.dropTower!({ color: towerColor, spot: towerSpot });
+      },
+      outputStrings: {
+        dropTower: {
+          en: 'Drop ${color} Tower (${spot})',
+          cn: '在 ${spot} 放 ${color} 塔',
+        },
+        light: {
+          en: 'Light',
+          cn: '光',
+        },
+        dark: {
+          en: 'Dark',
+          cn: '暗',
+        },
+        platform: {
+          en: 'Platform',
+          cn: '平台内',
+        },
+        corner: {
+          en: 'Inside Corner',
+          cn: '平台交叉处',
+        },
+        unknown: Outputs.unknown,
+      },
+    },
+    {
+      id: 'P12S Engravement 3 Soak Tower/Bait Adds',
+      type: 'GainsEffect',
+      netRegex: { effectId: engravementTiltIds },
+      condition: (data, matches) => data.engravementCounter === 3 && data.me === matches.target,
+      suppressSeconds: 15, // avoid second (incorrect) alert when debuff switches from soaking tower
+      alertText: (data, matches, output) => {
+        // lightTower/darkTower support players receive lightTilt/darkTilt once dropping their tower
+        // so exclude them from receiving this alert
+        if (data.engravement3TowerPlayers.includes(data.me))
+          return;
+
+        const soakMap = {
+          lightTower: 'darkTilt',
+          darkTower: 'lightTilt',
+        } as const;
+        const myEffect = engravementLabelMap[matches.effectId];
+        if (myEffect === undefined || data.engravement3TowerType === undefined)
+          return;
+        const soakTiltType = soakMap[data.engravement3TowerType];
+        const towerColor = data.engravement3TowerType === 'lightTower'
+          ? output.light!()
+          : output.dark!();
+        if (myEffect === soakTiltType)
+          return output.soakTower!({ color: towerColor });
+        return output.baitCleaves!();
+      },
+      outputStrings: {
+        soakTower: {
+          en: 'Soak ${color} Tower',
+          cn: '踩 ${color} 塔',
+        },
+        baitCleaves: {
+          en: 'Bait line cleave',
+          cn: '引导射线',
+        },
+        light: {
+          en: 'Light',
+          cn: '光',
+        },
+        dark: {
+          en: 'Dark',
+          cn: '暗',
+        },
+      },
+    },
+    {
       id: 'P12S Peridialogos',
       type: 'StartsUsing',
       netRegex: { id: '82FF', source: 'Athena', capture: false },
@@ -772,6 +1242,7 @@ const triggerSet: TriggerSet<Data> = {
       // TODO: should we base this off of the first coil/burst instead?
       // 7.2 seconds is the time until the second mechanic finishes, so call early.
       delaySeconds: 4.5,
+      durationSeconds: 8, // keep active until right before 2nd orb resolves
       alertText: (data, _matches, output) => {
         // Sort ascending.
         const collect = data.superchainCollect.slice(3, 7).sort((a, b) =>
@@ -808,30 +1279,55 @@ const triggerSet: TriggerSet<Data> = {
         const prevDir = Directions.addedCombatantPosTo8Dir(firstMechDest, centerX, centerY);
         const thisDir = Directions.addedCombatantPosTo8Dir(donutDest, centerX, centerY);
 
+        const engrave = output[data.engravement2MyLabel ?? 'unknown']!();
+
         const rotation = (thisDir - prevDir + 8) % 8;
         if (rotation === 2)
-          return output.leftClockwise!();
+          return output.leftClockwise!({ engrave: engrave });
         if (rotation === 6)
-          return output.rightCounterclockwise!();
+          return output.rightCounterclockwise!({ engrave: engrave });
       },
       outputStrings: {
         // This is left and right facing the boss.
-        // TODO: this should probably also say your debuff,
-        // e.g. "Left (Dark Laser)" or "Right (Light Tower)" or something?
         leftClockwise: {
-          en: 'Left (CW)',
-          de: 'Links (im Uhrzeigersinn)',
-          fr: 'Gauche (horaire)',
-          cn: '左左左 (顺时针)',
-          ko: '왼쪽 (시계방향)',
+          en: 'Left (CW) => ${engrave}',
+          de: 'Links (im Uhrzeigersinn) => ${engrave}',
+          fr: 'Gauche (horaire) => ${engrave}',
+          cn: '左左左 (顺时针) => ${engrave}',
+          ko: '왼쪽 (시계방향) => ${engrave}',
         },
         rightCounterclockwise: {
-          en: 'Right (CCW)',
-          de: 'Rechts (gegen Uhrzeigersinn)',
-          fr: 'Droite (Anti-horaire)',
-          cn: '右右右 (逆时针)',
-          ko: '오른쪽 (반시계방향)',
+          en: 'Right (CCW) => ${engrave}',
+          de: 'Rechts (gegen Uhrzeigersinn) => ${engrave}',
+          fr: 'Droite (Anti-horaire) => ${engrave}',
+          cn: '右右右 (逆时针) => ${engrave}',
+          ko: '오른쪽 (반시계방향) => ${engrave}',
         },
+        lightBeam: {
+          en: 'Light Beam (Stack w/Dark)',
+          cn: '光激光（与暗分摊）',
+        },
+        darkBeam: {
+          en: 'Dark Beam (Stack w/Light)',
+          cn: '暗激光（与光分摊）',
+        },
+        lightTower: {
+          en: 'Light Tower',
+          cn: '光塔点名',
+        },
+        darkTower: {
+          en: 'Dark Tower',
+          cn: '暗塔点名',
+        },
+        lightTilt: {
+          en: 'Light Group',
+          cn: '光分摊组',
+        },
+        darkTilt: {
+          en: 'Dark Group',
+          cn: '暗分摊组',
+        },
+        unknown: Outputs.unknown,
       },
     },
     {
@@ -842,6 +1338,7 @@ const triggerSet: TriggerSet<Data> = {
       // TODO: should we base this off of the first coil/burst instead?
       // 10.6 seconds is the time until the second mechanic finishes, so call early.
       delaySeconds: 9.1,
+      durationSeconds: 5.5,
       alertText: (data, _matches, output) => {
         // Sort ascending.
         const collect = data.superchainCollect.slice(7, 10).sort((a, b) =>
@@ -855,15 +1352,35 @@ const triggerSet: TriggerSet<Data> = {
 
         const donutDistSqr = distSqr(donut, dest);
         const sphereDistSqr = distSqr(sphere, dest);
-        if (donutDistSqr > sphereDistSqr)
-          return output.inThenOut!();
-        return output.outThenIn!();
+        const moveOrder = donutDistSqr > sphereDistSqr ? output.inThenOut!() : output.outThenIn!();
+        const engrave = output[data.engravement2MyLabel ?? 'unknown']!();
+        return output.combined!({ move: moveOrder, engrave: engrave });
       },
       outputStrings: {
-        // TODO: this should also say to spread / place tower / take tower
-        // TODO: maybe we need separate calls for these ^ after initial donut/sphere goes off?
+        combined: {
+          en: '${move} => ${engrave}',
+        },
         inThenOut: Outputs.inThenOut,
         outThenIn: Outputs.outThenIn,
+        lightBeam: {
+          en: 'Soak Dark Tower',
+          cn: '踩暗塔',
+        },
+        darkBeam: {
+          en: 'Soak Light Tower',
+          cn: '踩光塔',
+        },
+        lightTower: {
+          en: 'Drop Light Tower',
+          cn: '放光塔',
+        },
+        darkTower: {
+          en: 'Drop Dark Tower',
+          cn: '放暗塔',
+        },
+        lightTilt: Outputs.spread,
+        darkTilt: Outputs.spread,
+        unknown: Outputs.unknown,
       },
     },
     {
@@ -961,6 +1478,7 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Vertical',
           de: 'Vertikal',
           fr: 'Vertical',
+          cn: '垂直',
           ko: '세로',
         },
       },
@@ -975,6 +1493,7 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Inny Spinny',
           de: 'Innerer Kreis',
           fr: 'Cercle intérieur',
+          cn: '月环',
           ko: '가운데 원',
         },
       },
@@ -989,8 +1508,181 @@ const triggerSet: TriggerSet<Data> = {
           en: 'Horizontal',
           de: 'Horizontal',
           fr: 'Horizontal',
+          cn: '水平',
           ko: '가로',
         },
+      },
+    },
+    {
+      id: 'P12S Pangenesis Collect',
+      type: 'GainsEffect',
+      netRegex: { effectId: pangenesisEffectIds },
+      condition: (data) => !data.pangenesisDebuffsCalled && !data.isDoorBoss,
+      run: (data, matches) => {
+        const id = matches.effectId;
+        if (id === pangenesisEffects.darkTilt) {
+          const duration = parseFloat(matches.duration);
+          // 16 = short, 20 = long
+          data.pangenesisRole[matches.target] = duration > 18 ? 'longDark' : 'shortDark';
+        } else if (id === pangenesisEffects.lightTilt) {
+          const duration = parseFloat(matches.duration);
+          // 16 = short, 20 = long
+          data.pangenesisRole[matches.target] = duration > 18 ? 'longLight' : 'shortLight';
+        } else if (id === pangenesisEffects.unstableFactor) {
+          if (matches.count === '01')
+            data.pangenesisRole[matches.target] = 'one';
+        } else if (id === pangenesisEffects.stableSystem) {
+          // Ordered: Unstable Factor / Stable System / Umbral Tilt (light) / Astral Tilt (dark)
+          // ...and applied per person in that order.  Don't overwrite roles here.
+          data.pangenesisRole[matches.target] ??= 'not';
+        }
+      },
+    },
+    {
+      id: 'P12S Pangenesis Initial',
+      type: 'GainsEffect',
+      netRegex: { effectId: 'E22', capture: false },
+      delaySeconds: 0.5,
+      durationSeconds: (data) => {
+        // There's ~13 seconds until the first tower and ~18 until the second tower.
+        const myRole = data.pangenesisRole[data.me];
+        return myRole === 'not' || myRole === 'longDark' || myRole === 'longLight' ? 17 : 12;
+      },
+      suppressSeconds: 999999,
+      alertText: (data, _matches, output) => {
+        const myRole = data.pangenesisRole[data.me];
+        if (myRole === undefined)
+          return;
+
+        if (myRole === 'shortLight')
+          return output.shortLight!();
+        if (myRole === 'longLight')
+          return output.longLight!();
+        if (myRole === 'shortDark')
+          return output.shortDark!();
+        if (myRole === 'longDark')
+          return output.longDark!();
+
+        const myBuddy = Object.keys(data.pangenesisRole).find((x) => {
+          return data.pangenesisRole[x] === myRole && x !== data.me;
+        });
+        const player = myBuddy === undefined ? output.unknown!() : data.ShortName(myBuddy);
+        if (myRole === 'not')
+          return output.nothing!({ player: player });
+        return output.one!({ player: player });
+      },
+      run: (data) => data.pangenesisDebuffsCalled = true,
+      outputStrings: {
+        nothing: {
+          en: 'Nothing (w/${player})',
+        },
+        one: {
+          en: 'One (w/${player})',
+        },
+        shortLight: {
+          en: 'Short Light (get first dark)',
+        },
+        longLight: {
+          en: 'Long Light (get second dark)',
+        },
+        shortDark: {
+          en: 'Short Dark (get first light)',
+        },
+        longDark: {
+          en: 'Long Dark (get second light)',
+        },
+        unknown: Outputs.unknown,
+      },
+    },
+    {
+      id: 'P12S Pangenesis Tilt Gain',
+      type: 'GainsEffect',
+      netRegex: { effectId: [pangenesisEffects.lightTilt, pangenesisEffects.darkTilt] },
+      condition: (data, matches) => matches.target === data.me && !data.isDoorBoss,
+      run: (data, matches) => {
+        const color = matches.effectId === pangenesisEffects.lightTilt ? 'light' : 'dark';
+        data.pangenesisCurrentColor = color;
+      },
+    },
+    {
+      id: 'P12S Pangenesis Tilt Lose',
+      type: 'LosesEffect',
+      netRegex: { effectId: [pangenesisEffects.lightTilt, pangenesisEffects.darkTilt] },
+      condition: (data, matches) => matches.target === data.me && !data.isDoorBoss,
+      run: (data) => data.pangenesisCurrentColor = undefined,
+    },
+    {
+      id: 'P12S Pangenesis Tower',
+      type: 'Ability',
+      // 8343 = Umbral Advent (light tower), 8344 = Astral Advent (dark tower)
+      netRegex: { id: ['8343', '8344'] },
+      condition: (data, matches) => matches.target === data.me && !data.isDoorBoss,
+      run: (data, matches) => {
+        const color = matches.id === '8343' ? 'light' : 'dark';
+        data.lastPangenesisTowerColor = color;
+      },
+    },
+    {
+      id: 'P12S Pangenesis Slime Reminder',
+      type: 'Ability',
+      // 8343 = Umbral Advent (light tower), 8344 = Astral Advent (dark tower)
+      // There's always 1-2 of each, so just watch one.
+      netRegex: { id: '8343', capture: false },
+      condition: (data) => !data.isDoorBoss,
+      preRun: (data) => data.pangenesisTowerCount++,
+      suppressSeconds: 3,
+      alarmText: (data, _matches, output) => {
+        if (data.pangenesisTowerCount !== 3)
+          return;
+        if (data.pangenesisRole[data.me] !== 'not')
+          return;
+        return output.slimeTethers!();
+      },
+      outputStrings: {
+        slimeTethers: {
+          en: 'Get Slime Tethers',
+        },
+      },
+    },
+    {
+      id: 'P12S Pangenesis Tower Call',
+      type: 'GainsEffect',
+      netRegex: { effectId: pangenesisEffects.lightTilt, capture: false },
+      condition: (data) => {
+        if (data.isDoorBoss)
+          return false;
+        return data.lastPangenesisTowerColor !== undefined && data.pangenesisTowerCount !== 3;
+      },
+      delaySeconds: 0.5,
+      suppressSeconds: 3,
+      response: (data, _matches, output) => {
+        // cactbot-builtin-response
+        output.responseOutputStrings = {
+          // TODO: with more tracking we could even tell you who you're supposed
+          // to be with so that you could yell something on comms to fix mistakes.
+          lightTower: {
+            en: 'Light Tower',
+          },
+          darkTower: {
+            en: 'Dark Tower',
+          },
+        };
+
+        let tower: typeof data.pangenesisCurrentColor;
+        if (data.pangenesisCurrentColor === 'light')
+          tower = 'dark';
+        else if (data.pangenesisCurrentColor === 'dark')
+          tower = 'light';
+        else
+          tower = data.lastPangenesisTowerColor;
+
+        if (tower === undefined)
+          return;
+
+        // TODO: should we also say "Dark Tower (again)" or "Dark Tower (switch)" for emphasis?
+        const severity = tower === data.lastPangenesisTowerColor ? 'infoText' : 'alertText';
+        const text = tower === 'light' ? output.lightTower!() : output.darkTower!();
+        return { [severity]: text };
       },
     },
   ],
