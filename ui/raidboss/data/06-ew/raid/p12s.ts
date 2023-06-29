@@ -372,6 +372,7 @@ const triggerSet: TriggerSet<Data> = {
         clones: {
           en: 'Clones ${dir}',
           ja: '${dir}',
+          cn: '${dir}',
           ko: '분신 ${dir}',
         },
         north: Outputs.north,
@@ -882,40 +883,41 @@ const triggerSet: TriggerSet<Data> = {
           const color = tempColor === 'light' ? 'dark' : 'light';
 
           if (data.triggerSetConfig.engravement1DropTower === 'quadrant') {
-            if (x < 80 && y < 100) { // x = 75 && y = 97
+            if (x < 80 && y < 100) { // WNW: x = 75 && y = 97
               data.engravement1BeamsPosMap.set('NE', color);
-            } else if (x < 100 && y < 80) { // x = 97 && y = 75
+            } else if (x < 100 && y < 80) { // NNW: x = 97 && y = 75
               data.engravement1BeamsPosMap.set('SW', color);
-            } else if (x > 100 && y < 80) { // x = 103 && y = 75
+            } else if (x > 100 && y < 80) { // NNE: x = 103 && y = 75
               data.engravement1BeamsPosMap.set('SE', color);
-            } else if (x > 120 && y < 100) { // x = 125 && y = 97
+            } else if (x > 120 && y < 100) { // ENE: x = 125 && y = 97
               data.engravement1BeamsPosMap.set('NW', color);
-            } else if (x > 120 && y > 100) { // x = 125 && y = 103
+            } else if (x > 120 && y > 100) { // ESE: x = 125 && y = 103
               data.engravement1BeamsPosMap.set('SW', color);
-            } else if (x > 100 && y > 120) { // x = 103 && y = 125
+            } else if (x > 100 && y > 120) { // SSE: x = 103 && y = 125
               data.engravement1BeamsPosMap.set('NE', color);
-            } else if (x < 100 && y > 120) { // x = 97 && y = 125
+            } else if (x < 100 && y > 120) { // SSW: x = 97 && y = 125
               data.engravement1BeamsPosMap.set('NW', color);
-            } else if (x < 80 && y > 100) { // x = 75 && y = 103
+            } else if (x < 80 && y > 100) { // WSW: x = 75 && y = 103
               data.engravement1BeamsPosMap.set('SE', color);
             }
           } else if (data.triggerSetConfig.engravement1DropTower === 'clockwise') {
-            if (x < 80 && y < 100) { // x = 75 && y = 97
+            // Tether stretches across and tower is clockwise; e.g. N add stretches S, and tower is SW.
+            if (x < 80 && y < 100) { // WNW: x = 75 && y = 97
               data.engravement1BeamsPosMap.set('SE', color);
-            } else if (x < 100 && y < 80) { // x = 97 && y = 75
+            } else if (x < 100 && y < 80) { // NNW: x = 97 && y = 75
+              data.engravement1BeamsPosMap.set('SW', color);
+            } else if (x > 100 && y < 80) { // NNE: x = 103 && y = 75
+              data.engravement1BeamsPosMap.set('SW', color);
+            } else if (x > 120 && y < 100) { // ENE: x = 125 && y = 97
+              data.engravement1BeamsPosMap.set('NW', color);
+            } else if (x > 120 && y > 100) { // ESE: x = 125 && y = 103
+              data.engravement1BeamsPosMap.set('NW', color);
+            } else if (x > 100 && y > 120) { // SSE: x = 103 && y = 125
+              data.engravement1BeamsPosMap.set('NE', color);
+            } else if (x < 100 && y > 120) { // SSW: x = 97 && y = 125
+              data.engravement1BeamsPosMap.set('NE', color);
+            } else if (x < 80 && y > 100) { // WSW: x = 75 && y = 103
               data.engravement1BeamsPosMap.set('SE', color);
-            } else if (x > 100 && y < 80) { // x = 103 && y = 75
-              data.engravement1BeamsPosMap.set('SW', color);
-            } else if (x > 120 && y < 100) { // x = 125 && y = 97
-              data.engravement1BeamsPosMap.set('SW', color);
-            } else if (x > 120 && y > 100) { // x = 125 && y = 103
-              data.engravement1BeamsPosMap.set('NW', color);
-            } else if (x > 100 && y > 120) { // x = 103 && y = 125
-              data.engravement1BeamsPosMap.set('NW', color);
-            } else if (x < 100 && y > 120) { // x = 97 && y = 125
-              data.engravement1BeamsPosMap.set('NE', color);
-            } else if (x < 80 && y > 100) { // x = 75 && y = 103
-              data.engravement1BeamsPosMap.set('NE', color);
             }
           }
         }
@@ -1182,6 +1184,7 @@ const triggerSet: TriggerSet<Data> = {
         baitCleave: {
           en: 'Bait line cleave',
           ja: '外からのレーザー誘導',
+          cn: '引导射线',
           ko: '레이저 유도',
         },
       },
@@ -1864,6 +1867,7 @@ const triggerSet: TriggerSet<Data> = {
         combined: {
           en: '${move} => ${engrave}',
           ja: '${move} => ${engrave}',
+          cn: '${move} => ${engrave}',
           ko: '${move} => ${engrave}',
         },
         inThenOut: Outputs.inThenOut,
@@ -2104,31 +2108,37 @@ const triggerSet: TriggerSet<Data> = {
         nothing: {
           en: 'Nothing (w/${player})',
           ja: '無職: 2番目の上の塔 (${player})',
+          cn: '闲人: 踩第2轮塔 (${player})',
           ko: '디버프 없음 (+ ${player})',
         },
         one: {
           en: 'One (w/${player})',
           ja: '因子1: 1番目の塔 (${player})',
+          cn: '单因子: 踩第1轮塔 (${player})',
           ko: '1번 (+ ${player})',
         },
         shortLight: {
           en: 'Short Light (get first dark)',
           ja: '早: 1番目のやみ塔',
+          cn: '白1: 踩第1轮黑塔',
           ko: '짧은 빛 (첫 어둠 대상)',
         },
         longLight: {
           en: 'Long Light (get second dark)',
           ja: '遅: 2番目の下のやみ塔',
+          cn: '白2: 踩第2轮黑塔',
           ko: '긴 빛 (두번째 어둠 대상)',
         },
         shortDark: {
           en: 'Short Dark (get first light)',
           ja: '早: 1番目のひかり塔',
+          cn: '黑1: 踩第1轮白塔',
           ko: '짧은 어둠 (첫 빛 대상)',
         },
         longDark: {
           en: 'Long Dark (get second light)',
           ja: '遅: 2番目の下のひかり塔',
+          cn: '黑2: 踩第2轮白塔',
           ko: '긴 어둠 (두번째 빛 대상)',
         },
         unknown: Outputs.unknown,
@@ -2182,6 +2192,7 @@ const triggerSet: TriggerSet<Data> = {
         slimeTethers: {
           en: 'Get Slime Tethers',
           ja: 'スライムの線取り',
+          cn: '接线',
           ko: '슬라임 선 가져가기',
         },
       },
@@ -2205,21 +2216,25 @@ const triggerSet: TriggerSet<Data> = {
           lightTower: {
             en: 'Light Tower',
             ja: 'ひかり塔',
+            cn: '踩白塔',
             ko: '빛 기둥',
           },
           darkTower: {
             en: 'Dark Tower',
             ja: 'やみ塔',
+            cn: '踩黑塔',
             ko: '어둠 기둥',
           },
           lightTowerSwitch: {
             en: 'Light Tower (switch)',
             ja: 'やみ -> ひかり塔',
+            cn: '踩白塔 (换色)',
             ko: '빛 기둥 (교체)',
           },
           darkTowerSwitch: {
             en: 'Dark Tower (switch)',
             ja: 'ひかり -> やみ塔',
+            cn: '踩黑塔 (换色)',
             ko: '어둠 기둥 (교체)',
           },
         };
