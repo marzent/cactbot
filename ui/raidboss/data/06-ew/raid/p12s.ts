@@ -13,19 +13,23 @@ import { TriggerSet } from '../../../../../types/trigger';
 // TODO: Superchain 2B
 // TODO: final Sample safe spot
 
-// TODO: palladian grasp tankbusters (which are often invulned)
 // TODO: crush helm tankbusters??? (+esuna calls for non-invulning tanks??)
-// TODO: gaiochos group up for chains / break chains calls
-//       (also maybe delay the second horizontal/vertical call until after break chains)
-// TODO: summon darkness tether break locations
-// TODO: more aoe calls for caloric, classical, gaiaochos (big?)
-// TODO: basic caloric headmarkers (e.g. beacons, initial fire spread)
-// TODO: other caloric buff calls (if there's any universal strat, e.g. wind spreads)
-// TODO: classical shape headmarker + pyramid/cube call
-// TODO: bait proteans / move calls for classical 1 and 2
+// TODO: gaiochos group up for chains
+// TODO: delay the second horizontal/vertical call until after break chains (or combine!)
+// TODO: summon darkness tether break locations for gaiaochos 1 and 2
+// TODO: bait protean calls for classical 1 and 2
 
 // TODO: add triggerset ui for playstation order + classical location
 // TODO: detect(?!) hex strat for caloric2 and tell people who to go to??
+
+type Phase =
+  | 'superchain1'
+  | 'palladion'
+  | 'superchain2a'
+  | 'superchain2b'
+  | 'gaiaochos'
+  | 'classical'
+  | 'caloric';
 
 const centerX = 100;
 const centerY = 100;
@@ -146,7 +150,7 @@ const headmarkers = {
   // vfx/lockon/eff/lockon_batu_01v.avfx
   playstationCross: '0172',
   // vfx/lockon/eff/m0124trg_a4c.avfx
-  caloric1Beacon: '0193',
+  caloric1Beacon: '012F',
   // vfx/lockon/eff/lockon8_line_1v.avfx
   caloric2InitialFire: '01D6',
   // vfx/lockon/eff/d1014trg_8s_0v.avfx
@@ -179,6 +183,9 @@ const pangenesisEffectIds: readonly string[] = Object.values(pangenesisEffects);
 
 type PangenesisRole = 'shortLight' | 'shortDark' | 'longLight' | 'longDark' | 'one' | 'not';
 
+type PlaystationMarker = 'circle' | 'cross' | 'triangle' | 'square';
+type CaloricMarker = 'fire' | 'wind';
+
 const getHeadmarkerId = (data: Data, matches: NetMatches['HeadMarker']) => {
   if (data.decOffset === undefined) {
     if (data.expectedFirstHeadmarker === undefined) {
@@ -195,7 +202,7 @@ export interface Data extends RaidbossData {
   decOffset?: number;
   expectedFirstHeadmarker?: string;
   isDoorBoss: boolean;
-  phase?: 'superchain1' | 'palladion' | 'superchain2a' | 'superchain2b';
+  phase?: Phase;
   combatantData: PluginCombatantState[];
   paradeigmaCounter: number;
   glaukopisFirstHit?: string;
@@ -226,6 +233,18 @@ export interface Data extends RaidbossData {
   pangenesisTowerCount: number;
   lastPangenesisTowerColor?: 'light' | 'dark';
   pangenesisCurrentColor?: 'light' | 'dark';
+  gaiaochosCounter: number;
+  palladionGrapsTarget?: string;
+  classicalCounter: number;
+  classicalMarker: { [name: string]: PlaystationMarker };
+  classicalAlphaBeta: { [name: string]: 'alpha' | 'beta' };
+  caloricCounter: number;
+  caloric1First: string[];
+  caloric1Buff: { [name: string]: CaloricMarker };
+  caloric1Mine?: CaloricMarker;
+  caloric2Fire?: string;
+  caloric2PassCount: number;
+  gaiochosTetherCollect: string[];
 }
 
 const triggerSet: TriggerSet<Data> = {
@@ -288,6 +307,15 @@ const triggerSet: TriggerSet<Data> = {
       whiteFlameCounter: 0,
       pangenesisRole: {},
       pangenesisTowerCount: 0,
+      gaiaochosCounter: 0,
+      classicalCounter: 0,
+      classicalMarker: {},
+      classicalAlphaBeta: {},
+      caloricCounter: 0,
+      caloric1First: [],
+      caloric1Buff: {},
+      caloric2PassCount: 0,
+      gaiochosTetherCollect: [],
     };
   },
   triggers: [
@@ -299,7 +327,7 @@ const triggerSet: TriggerSet<Data> = {
         data.whiteFlameCounter = 0;
         data.superchainCollect = [];
 
-        const phaseMap: { [id: string]: Data['phase'] } = {
+        const phaseMap: { [id: string]: Phase } = {
           '82DA': 'superchain1',
           '82F5': 'palladion',
           '86FA': 'superchain2a',
@@ -316,6 +344,27 @@ const triggerSet: TriggerSet<Data> = {
       run: (data) => {
         data.isDoorBoss = false;
         data.expectedFirstHeadmarker = headmarkers.palladianGrasp;
+      },
+    },
+    {
+      id: 'P12S Phase Tracker 3',
+      type: 'StartsUsing',
+      netRegex: { id: ['8326', '8331', '8338'], source: 'Pallas Athena' },
+      run: (data, matches) => {
+        switch (matches.id) {
+          case '8326':
+            data.phase = 'gaiaochos';
+            data.gaiaochosCounter++;
+            break;
+          case '8331':
+            data.phase = 'classical';
+            data.classicalCounter++;
+            break;
+          case '8338':
+            data.phase = 'caloric';
+            data.caloricCounter++;
+            break;
+        }
       },
     },
     {
@@ -1314,6 +1363,7 @@ const triggerSet: TriggerSet<Data> = {
       condition: (data, matches) =>
         data.engravementCounter === 3 && data.me === matches.target &&
         data.engravement3TowerPlayers.includes(data.me),
+      durationSeconds: 6,
       alertText: (data, matches, output) => {
         let towerColor = output.unknown!();
         if (data.engravement3TowerType !== undefined)
@@ -2258,6 +2308,443 @@ const triggerSet: TriggerSet<Data> = {
           return { alertText: output.lightTowerSwitch!() };
         return { alertText: output.darkTowerSwitch!() };
       },
+    },
+    {
+      id: 'P12S Ultima Blow Tether Collect',
+      type: 'Tether',
+      netRegex: { id: '0001' },
+      condition: (data) => data.phase === 'gaiaochos' && data.gaiaochosCounter === 2,
+      run: (data, matches) => data.gaiochosTetherCollect.push(matches.target),
+    },
+    {
+      id: 'P12S Ultima Blow Tether',
+      type: 'Tether',
+      netRegex: { id: '0001', capture: false },
+      condition: (data) => data.phase === 'gaiaochos' && data.gaiaochosCounter === 2,
+      delaySeconds: 0.5,
+      suppressSeconds: 5,
+      response: (data, _matches, output) => {
+        // cactbot-builtin-response
+        output.responseOutputStrings = {
+          blockPartner: {
+            en: 'Block tether',
+            ja: '相棒の前でビームを受ける',
+          },
+          stretchTether: {
+            en: 'Stretch tether',
+          },
+        };
+
+        if (data.gaiochosTetherCollect.includes(data.me))
+          return { infoText: output.stretchTether!() };
+        return { alertText: output.blockPartner!() };
+      },
+      // If people die, it's not always on the opposite role, so just re-collect.
+      run: (data) => data.gaiochosTetherCollect = [],
+    },
+    {
+      id: 'P12S Ultima',
+      type: 'StartsUsing',
+      netRegex: { id: ['8682', '86F6'], source: 'Pallas Athena', capture: false },
+      response: Responses.aoe('alert'),
+    },
+    {
+      id: 'P12S Palladian Grasp Target',
+      type: 'HeadMarker',
+      netRegex: {},
+      run: (data, matches) => {
+        const id = getHeadmarkerId(data, matches);
+        if (id === headmarkers.palladianGrasp)
+          data.palladionGrapsTarget = matches.target;
+      },
+    },
+    {
+      id: 'P12S Palladian Grasp',
+      type: 'StartsUsing',
+      netRegex: { id: '831A', source: 'Pallas Athena', capture: false },
+      response: (data, _match, output) => {
+        // cactbot-builtin-response
+        // We could suggest to swap here, but I think this is mostly invulned.
+        output.responseOutputStrings = {
+          tankBusterCleavesOnYou: Outputs.tankBusterCleavesOnYou,
+          tankBusterCleaves: Outputs.tankBusterCleaves,
+          avoidTankCleaves: Outputs.avoidTankCleaves,
+        };
+
+        if (data.palladionGrapsTarget === data.me)
+          return { alertText: output.tankBusterCleavesOnYou!() };
+        if (data.role === 'tank' || data.role === 'healer' || data.job === 'BLU')
+          return { alertText: output.tankBusterCleaves!() };
+        return { infoText: output.avoidTankCleaves!() };
+      },
+    },
+    {
+      id: 'P12S Gaiaochos',
+      type: 'StartsUsing',
+      netRegex: { id: '8326', source: 'Pallas Athena', capture: false },
+      response: Responses.bigAoe('alert'),
+    },
+    {
+      id: 'P12S Gaiaochos tether',
+      type: 'Tether',
+      netRegex: { id: '0009' },
+      alertText: (data, matches, output) => {
+        if (matches.source !== data.me && matches.target !== data.me)
+          return;
+        const partner = matches.source === data.me ? matches.target : matches.source;
+        return output.text!({ partner: data.ShortName(partner) });
+      },
+      outputStrings: {
+        text: {
+          en: 'Break tether! (w/ ${partner})',
+          ja: '線切る (${partner})',
+        },
+      },
+    },
+    {
+      id: 'P12S The Classical Concepts PS marker',
+      type: 'HeadMarker',
+      netRegex: {},
+      run: (data, matches) => {
+        const id = getHeadmarkerId(data, matches);
+        const psMarkerMap: { [id: string]: PlaystationMarker } = {
+          [headmarkers.playstationCircle]: 'circle',
+          [headmarkers.playstationTriangle]: 'triangle',
+          [headmarkers.playstationSquare]: 'square',
+          [headmarkers.playstationCross]: 'cross',
+        } as const;
+        const marker = psMarkerMap[id];
+        if (marker !== undefined)
+          data.classicalMarker[matches.target] = marker;
+      },
+    },
+    {
+      id: 'P12S The Classical Concepts Alpha Beta',
+      type: 'GainsEffect',
+      netRegex: { effectId: ['DE8', 'DE9'] },
+      run: (data, matches) => {
+        data.classicalAlphaBeta[matches.target] = matches.effectId === 'DE8' ? 'alpha' : 'beta';
+      },
+    },
+    {
+      id: 'P12S The Classical Concepts',
+      type: 'Ability',
+      netRegex: { id: '8331', source: 'Pallas Athena', capture: false },
+      delaySeconds: 2,
+      durationSeconds: (data) => data.classicalCounter === 1 ? 9 : 16,
+      suppressSeconds: 1,
+      infoText: (data, _matches, output) => {
+        const marker = data.classicalMarker[data.me];
+        const tether = data.classicalAlphaBeta[data.me];
+        if (marker === undefined || tether === undefined)
+          return;
+        return output.text!({ marker: output[marker]!(), shape: output[tether]!() });
+      },
+      outputStrings: {
+        text: {
+          en: '${marker} (block ${shape})',
+          ja: '${marker} + ${shape}', // FIXME
+        },
+        circle: {
+          en: 'Circle',
+          de: 'Kreis',
+          fr: 'Cercle',
+          ja: 'まる',
+          cn: '圆圈',
+          ko: '동그라미',
+        },
+        triangle: {
+          en: 'Triangle',
+          de: 'Dreieck',
+          fr: 'Triangle',
+          ja: 'さんかく',
+          cn: '三角',
+          ko: '삼각',
+        },
+        square: {
+          en: 'Square',
+          de: 'Viereck',
+          fr: 'Carré',
+          ja: 'しかく',
+          cn: '方块',
+          ko: '사각',
+        },
+        cross: {
+          en: 'X',
+          de: 'X',
+          fr: 'Croix',
+          ja: 'バツ',
+          cn: 'X',
+          ko: 'X',
+        },
+        alpha: {
+          // Deliberately say "pyramid" here to differentiate from "triangle" marker.
+          en: 'pyramid',
+        },
+        beta: {
+          en: 'cube',
+        },
+      },
+    },
+    {
+      id: 'P12S The Classical Concepts Move',
+      type: 'Ability',
+      netRegex: { id: '8323', source: 'Pallas Athena', capture: false },
+      delaySeconds: 2.5,
+      response: Responses.moveAway(),
+    },
+    {
+      id: 'P12S Caloric Theory 1 Beacon Collect',
+      type: 'HeadMarker',
+      netRegex: {},
+      run: (data, matches) => {
+        const id = getHeadmarkerId(data, matches);
+        if (id === headmarkers.caloric1Beacon)
+          data.caloric1First.push(matches.target);
+      },
+    },
+    {
+      id: 'P12S Caloric Theory 1 Beacon',
+      type: 'StartsUsing',
+      netRegex: { id: '8338', source: 'Pallas Athena', capture: false },
+      condition: (data) => data.caloricCounter === 1,
+      preRun: (data) => {
+        data.caloric1Buff = {};
+        data.caloric1Mine = undefined;
+      },
+      delaySeconds: 1,
+      alertText: (data, _matches, output) => {
+        if (data.caloric1First.length !== 2)
+          return;
+        const index = data.caloric1First.indexOf(data.me);
+        if (index < 0)
+          return;
+        const partner = index === 0 ? 1 : 0;
+        return output.text!({ partner: data.ShortName(data.caloric1First[partner]) });
+      },
+      outputStrings: {
+        text: {
+          en: 'Initial Fire (w/ ${partner})',
+          ja: '自分に初炎 (${partner})', // FIXME
+        },
+      },
+    },
+    {
+      id: 'P12S Caloric Theory 1 Wind',
+      type: 'GainsEffect',
+      // E07 = Atmosfaction
+      netRegex: { effectId: 'E07' },
+      run: (data, matches) => data.caloric1Buff[matches.target] = 'wind',
+    },
+    {
+      id: 'P12S Caloric Theory 1 Fire',
+      type: 'GainsEffect',
+      // E06 = Pyrefaction
+      netRegex: { effectId: 'E06' },
+      alertText: (data, matches, output) => {
+        data.caloric1Buff[matches.target] = 'fire';
+        const duration = parseFloat(matches.duration);
+        if (duration < 12 && matches.target === data.me)
+          return output.text!();
+      },
+      outputStrings: {
+        text: {
+          en: 'Fire again',
+          ja: '再び炎！無職とあたまわり',
+        },
+      },
+    },
+    {
+      id: 'P12S Caloric Theory 1 Fire Final',
+      type: 'GainsEffect',
+      netRegex: { effectId: ['E06'] },
+      condition: (_data, matches) => parseFloat(matches.duration) > 11,
+      delaySeconds: 12.8,
+      suppressSeconds: 2,
+      alertText: (data, _matches, output) => {
+        if (data.caloric1Mine === 'fire' && data.caloric1Buff[data.me] === undefined)
+          return output.none!();
+        if (data.caloric1Mine === 'wind')
+          return output.wind!();
+      },
+      outputStrings: {
+        none: {
+          en: 'Stack with Fire',
+          ja: '無職！炎とあたまわり', // FIXME
+        },
+        wind: {
+          en: 'Spread Wind',
+          ja: '風！ 散会',
+        },
+      },
+    },
+    {
+      id: 'P12S Caloric Theory 1 Initial Buff',
+      type: 'Ability',
+      netRegex: { id: '8338', source: 'Pallas Athena', capture: false },
+      condition: (data) => data.caloricCounter === 1,
+      delaySeconds: 2,
+      durationSeconds: 8,
+      suppressSeconds: 1,
+      response: (data, _matches, output) => {
+        // cactbot-builtin-response
+        output.responseOutputStrings = {
+          fire: {
+            en: 'Fire (w/${team})',
+            ja: '自分に炎 (${team})',
+          },
+          wind: {
+            en: 'Wind (w/${team})',
+            ja: '自分に風 (${team})',
+          },
+          windBeacon: {
+            en: 'Initial Wind',
+            ja: '自分に初風', // FIXME
+          },
+        };
+
+        const myBuff = data.caloric1Buff[data.me];
+        data.caloric1Mine = myBuff;
+        if (myBuff === undefined)
+          return;
+
+        if (myBuff === 'fire') {
+          const myTeam: string[] = [];
+          for (const [name, stat] of Object.entries(data.caloric1Buff)) {
+            if (stat === myBuff && name !== data.me)
+              myTeam.push(data.ShortName(name));
+          }
+          return { alertText: output.fire!({ team: myTeam.sort().join(', ') }) };
+        }
+
+        if (data.caloric1First.includes(data.me))
+          return { infoText: output.windBeacon!() };
+
+        const myTeam: string[] = [];
+        for (const [name, stat] of Object.entries(data.caloric1Buff)) {
+          if (stat === myBuff && name !== data.me && !data.caloric1First.includes(name))
+            myTeam.push(data.ShortName(name));
+        }
+        return { alertText: output.wind!({ team: myTeam.sort().join(', ') }) };
+      },
+      run: (data) => {
+        data.caloric1First = [];
+        data.caloric1Buff = {};
+      },
+    },
+    {
+      id: 'P12S Caloric Theory 2 Fire Beacon',
+      type: 'HeadMarker',
+      netRegex: {},
+      response: (data, matches, output) => {
+        // cactbot-builtin-response
+        output.responseOutputStrings = {
+          fireOnMe: {
+            // TODO: is "first marker" ambiguous with "first person to pass fire"
+            // This is meant to be "person without wind who gets an extra stack".
+            en: 'Fire Marker',
+            ja: '自分に初炎!', // FIXME
+          },
+          fireOn: {
+            en: 'Fire on ${player}',
+            ja: '初炎: ${player}',
+          },
+        };
+
+        const id = getHeadmarkerId(data, matches);
+        if (id !== headmarkers.caloric2InitialFire)
+          return;
+        if (data.me === matches.target)
+          return { alarmText: output.fireOnMe!() };
+        return { infoText: output.fireOn!({ player: data.ShortName(matches.target) }) };
+      },
+    },
+    {
+      id: 'P12S Caloric Theory 2 Wind',
+      type: 'HeadMarker',
+      netRegex: {},
+      condition: (data, matches) => data.me === matches.target,
+      infoText: (data, matches, output) => {
+        const id = getHeadmarkerId(data, matches);
+        if (id !== headmarkers.caloric2Wind)
+          return;
+        return output.text!();
+      },
+      outputStrings: {
+        text: {
+          en: 'Wind Spread',
+          ja: '自分に風、散会',
+        },
+      },
+    },
+    {
+      id: 'P12S Caloric Theory 2 Pass',
+      type: 'GainsEffect',
+      netRegex: { effectId: 'E08' },
+      condition: (data) => data.caloricCounter === 2,
+      durationSeconds: 3,
+      response: (data, matches, output) => {
+        // cactbot-builtin-response
+        output.responseOutputStrings = {
+          passFire: {
+            en: 'Pass Fire',
+            ja: '次に移る！',
+          },
+          moveAway: Outputs.moveAway,
+        };
+
+        const prevFire = data.caloric2Fire;
+        const thisFire = matches.target;
+
+        // Order of events:
+        // - Player 1 gets the debuff at 8
+        // - Player 1 gets the debuff at 7
+        //
+        // loop:
+        // - Player 2 gets the debuff at 7
+        // - Player 1 loses the debuff
+        // - Player 2 gets the debuff at 6
+        // etc.
+        //
+        // Ignore duplicates, only consider transfers.
+        if (prevFire === thisFire)
+          return;
+
+        data.caloric2Fire = matches.target;
+        data.caloric2PassCount++;
+
+        if (thisFire !== data.me && prevFire !== data.me)
+          return;
+
+        if (data.caloric2PassCount === 8 || prevFire === data.me)
+          return { infoText: output.moveAway!() };
+        if (thisFire === data.me)
+          return { alertText: output.passFire!() };
+      },
+    },
+    {
+      id: 'P12S Ekpyrosis Cast',
+      type: 'StartsUsing',
+      netRegex: { id: '831E', source: 'Pallas Athena', capture: false },
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: {
+          en: 'Exaflare + Big AoE!',
+          de: 'Exaflare + Große AoE!', // FIXME
+          fr: 'ExaBrasier + Grosse AoE!', // FIXME
+          ja: 'エクサフレア + 全体攻撃',
+          cn: '地火 + 大AoE伤害！', // FIXME
+          ko: '엑사플레어 + 전체 공격!', // FIXME
+        },
+      },
+    },
+    {
+      id: 'P12S Ekpyrosis Spread',
+      type: 'Ability',
+      netRegex: { id: '831F', source: 'Pallas Athena', capture: false },
+      delaySeconds: 0.5,
+      suppressSeconds: 2,
+      response: Responses.spread('alert'),
     },
   ],
   timelineReplace: [
