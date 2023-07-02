@@ -2,7 +2,7 @@ import Conditions from '../../../../../resources/conditions';
 import Outputs from '../../../../../resources/outputs';
 import { callOverlayHandler } from '../../../../../resources/overlay_plugin_api';
 import { Responses } from '../../../../../resources/responses';
-import { Directions } from '../../../../../resources/util';
+import { DirectionOutput8, Directions } from '../../../../../resources/util';
 import ZoneId from '../../../../../resources/zone_id';
 import { RaidbossData } from '../../../../../types/data';
 import { PluginCombatantState } from '../../../../../types/event';
@@ -12,10 +12,6 @@ import { TriggerSet } from '../../../../../types/trigger';
 // TODO: add phase dash calls?? (maybe this is overkill)
 
 // TODO: crush helm tankbusters??? (+esuna calls for non-invulning tanks??)
-// TODO: gaiochos group up for chains
-// TODO: delay the second horizontal/vertical call until after break chains (or combine!)
-// TODO: summon darkness tether break locations for gaiaochos 1 and 2
-
 // TODO: detect(?!) hex strat for caloric2 and tell people who to go to??
 
 type Phase =
@@ -23,10 +19,12 @@ type Phase =
   | 'palladion'
   | 'superchain2a'
   | 'superchain2b'
-  | 'gaiaochos'
+  | 'gaiaochos1'
   | 'classical1'
   | 'caloric'
-  | 'classical2';
+  | 'pangenesis'
+  | 'classical2'
+  | 'gaiaochos2';
 
 const centerX = 100;
 const centerY = 100;
@@ -297,6 +295,7 @@ export interface Data extends RaidbossData {
   readonly triggerSetConfig: {
     engravement1DropTower: 'quadrant' | 'clockwise' | 'tower';
     classicalConceptsPairOrder: 'xsct' | 'cxts' | 'ctsx';
+    pangenesisFirstTower: 'agnostic' | 'not' | 'one';
   };
   decOffset?: number;
   expectedFirstHeadmarker?: string;
@@ -331,6 +330,7 @@ export interface Data extends RaidbossData {
   superchain2bSecondMech?: 'protean' | 'partners';
   superchain2bSecondDir?: 'east' | 'west';
   sampleTiles: NetMatches['Tether'][];
+  darknessClones: NetMatches['StartsUsing'][];
   conceptPair?: ConceptPair;
   conceptDebuff?: ConceptDebuff;
   conceptData: { [location: number]: ConceptColor };
@@ -351,7 +351,9 @@ export interface Data extends RaidbossData {
   caloric1Mine?: CaloricMarker;
   caloric2Fire?: string;
   caloric2PassCount: number;
-  gaiochosTetherCollect: string[];
+  gaiaochosTetherCollect: string[];
+  seenSecondTethers: boolean;
+  geocentrism2OutputStr?: string;
 }
 
 const triggerSet: TriggerSet<Data> = {
@@ -406,6 +408,21 @@ const triggerSet: TriggerSet<Data> = {
       },
       default: 'xsct',
     },
+    {
+      id: 'pangenesisFirstTower',
+      name: {
+        en: 'Pangenesis: First Towers',
+      },
+      type: 'select',
+      options: {
+        en: {
+          'Call Required Swaps Only': 'agnostic',
+          '0+2 (HRT)': 'not',
+          '1+2 (Yuki/Rinon)': 'one',
+        },
+      },
+      default: 'agnostic',
+    },
   ],
   timelineFile: 'p12s.txt',
   initData: () => {
@@ -428,6 +445,7 @@ const triggerSet: TriggerSet<Data> = {
       superchainCollect: [],
       whiteFlameCounter: 0,
       sampleTiles: [],
+      darknessClones: [],
       conceptData: {},
       pangenesisRole: {},
       pangenesisTowerCount: 0,
@@ -439,7 +457,8 @@ const triggerSet: TriggerSet<Data> = {
       caloric1First: [],
       caloric1Buff: {},
       caloric2PassCount: 0,
-      gaiochosTetherCollect: [],
+      gaiaochosTetherCollect: [],
+      seenSecondTethers: false,
     };
   },
   triggers: [
@@ -473,11 +492,11 @@ const triggerSet: TriggerSet<Data> = {
     {
       id: 'P12S Phase Tracker 3',
       type: 'StartsUsing',
-      netRegex: { id: ['8326', '8331', '8338'], source: 'Pallas Athena' },
+      netRegex: { id: ['8326', '8331', '8338', '833F'], source: 'Pallas Athena' },
       run: (data, matches) => {
         switch (matches.id) {
           case '8326':
-            data.phase = 'gaiaochos';
+            data.phase = data.gaiaochosCounter === 0 ? 'gaiaochos1' : 'gaiaochos2';
             data.gaiaochosCounter++;
             break;
           case '8331':
@@ -487,6 +506,9 @@ const triggerSet: TriggerSet<Data> = {
           case '8338':
             data.phase = 'caloric';
             data.caloricCounter++;
+            break;
+          case '833F':
+            data.phase = 'pangenesis';
             break;
         }
       },
@@ -1523,7 +1545,13 @@ const triggerSet: TriggerSet<Data> = {
       id: 'P12S Engravement 3 Soak Tower/Bait Adds',
       type: 'GainsEffect',
       netRegex: { effectId: engravementTiltIds },
-      condition: (data, matches) => data.engravementCounter === 3 && data.me === matches.target,
+      condition: (data, matches) => {
+        if (!data.isDoorBoss)
+          return false;
+        if (data.engravementCounter === 3 && data.me === matches.target)
+          return true;
+        return false;
+      },
       suppressSeconds: 15, // avoid second (incorrect) alert when debuff switches from soaking tower
       alertText: (data, matches, output) => {
         // lightTower/darkTower support players receive lightTilt/darkTilt once dropping their tower
@@ -2215,26 +2243,33 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         combined: {
           en: '${dir} (Side) => ${mechanic} After',
+          cn: '去 ${dir}(侧) => 稍后 ${mechanic}',
         },
         east: Outputs.east,
         west: Outputs.west,
         eastFromSouth: {
           en: 'Right/East',
+          cn: '右/东',
         },
         eastFromNorth: {
           en: 'Left/East',
+          cn: '左/东',
         },
         westFromSouth: {
           en: 'Left/West',
+          cn: '左/西',
         },
         westFromNorth: {
           en: 'Right/West',
+          cn: '右/西',
         },
         protean: {
           en: 'Protean',
+          cn: '八方分散',
         },
         partners: {
           en: 'Partners',
+          cn: '两人分摊',
         },
       },
     },
@@ -2272,23 +2307,28 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         combined: {
           en: '${mechanic} => ${dir}',
+          cn: '${mechanic} => ${dir}',
         },
         protean: {
           en: 'Protean',
+          cn: '八方分散',
         },
         partners: {
           en: 'Partners',
+          cn: '两人分摊',
         },
         inside: {
           en: 'Inside (avoid clones)',
+          cn: '内侧 (躲避场边激光)',
         },
         outside: {
           en: 'Outside (avoid clones)',
+          cn: '外侧 (躲避场边激光)',
         },
         avoid: {
           en: 'Avoid Line Cleaves',
           ja: '直線回避',
-          cn: '远离场边激光',
+          cn: '躲避场边激光',
           ko: '직선 장판 피하기',
         },
       },
@@ -2323,14 +2363,17 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         combined: {
           en: '${dir} => Out + ${mechanic}',
+          cn: '${dir} => 远离 + ${mechanic}',
         },
         north: Outputs.north,
         south: Outputs.south,
         protean: {
           en: 'Protean',
+          cn: '八方分散',
         },
         partners: {
           en: 'Partners',
+          cn: '两人分摊',
         },
       },
     },
@@ -2400,30 +2443,39 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         outsideNW: {
           en: 'Outside NW',
+          cn: '外侧 左上(西北)',
         },
         outsideNE: {
           en: 'Outside NE',
+          cn: '外侧 右上(东北)',
         },
         insideNW: {
           en: 'Inside NW',
+          cn: '内侧 左上(西北)',
         },
         insideNE: {
           en: 'Inside NE',
+          cn: '内侧 右上(东北)',
         },
         insideSW: {
           en: 'Inside SW',
+          cn: '内侧 左下(西南)',
         },
         insideSE: {
           en: 'Inside SE',
+          cn: '内侧 右下(东南)',
         },
         outsideSW: {
           en: 'Outside SW',
+          cn: '外侧 左下(西南)',
         },
         outsideSE: {
           en: 'Outside SE',
+          cn: '外侧 右下(东南)',
         },
         default: {
           en: 'Find safe tile',
+          cn: '找安全地板',
         },
       },
     },
@@ -2432,7 +2484,12 @@ const triggerSet: TriggerSet<Data> = {
       id: 'P12S Geocentrism Vertical',
       type: 'StartsUsing',
       netRegex: { id: '8329', source: 'Pallas Athena', capture: false },
-      alertText: (_data, _matches, output) => output.text!(),
+      alertText: (data, _matches, output) => {
+        if (data.phase === 'gaiaochos1')
+          return output.text!();
+        data.geocentrism2OutputStr = output.text!();
+        return;
+      },
       outputStrings: {
         text: {
           en: 'Vertical',
@@ -2448,7 +2505,12 @@ const triggerSet: TriggerSet<Data> = {
       id: 'P12S Geocentrism Circle',
       type: 'StartsUsing',
       netRegex: { id: '832A', source: 'Pallas Athena', capture: false },
-      alertText: (_data, _matches, output) => output.text!(),
+      alertText: (data, _matches, output) => {
+        if (data.phase === 'gaiaochos1')
+          return output.text!();
+        data.geocentrism2OutputStr = output.text!();
+        return;
+      },
       outputStrings: {
         text: {
           en: 'Inny Spinny',
@@ -2464,7 +2526,12 @@ const triggerSet: TriggerSet<Data> = {
       id: 'P12S Geocentrism Horizontal',
       type: 'StartsUsing',
       netRegex: { id: '832B', source: 'Pallas Athena', capture: false },
-      alertText: (_data, _matches, output) => output.text!(),
+      alertText: (data, _matches, output) => {
+        if (data.phase === 'gaiaochos1')
+          return output.text!();
+        data.geocentrism2OutputStr = output.text!();
+        return;
+      },
       outputStrings: {
         text: {
           en: 'Horizontal',
@@ -2533,45 +2600,59 @@ const triggerSet: TriggerSet<Data> = {
         output.responseOutputStrings = {
           classic1: {
             en: '${column}, ${row} => ${intercept}',
+            cn: '${column}, ${row} => ${intercept}',
           },
           classic2initial: {
             en: 'Initial: ${column}, ${row} => ${intercept}',
+            cn: '先去 ${column}, ${row} => ${intercept}',
           },
           classic2actual: {
             en: 'Actual: ${column}, ${row} => ${intercept}',
+            cn: '去 ${column}, ${row} => ${intercept}',
           },
           outsideWest: {
             en: 'Outside West',
+            cn: '第1列 (左西 外侧)',
           },
           insideWest: {
             en: 'Inside West',
+            cn: '第2列 (左西 内侧)',
           },
           insideEast: {
             en: 'Inside East',
+            cn: '第3列 (右东 内侧)',
           },
           outsideEast: {
             en: 'Outside East',
+            cn: '第4列 (右东 外侧)',
           },
           northRow: {
             en: 'North Blue',
+            cn: '第1个蓝方块',
           },
           middleRow: {
             en: 'Middle Blue',
+            cn: '第2个蓝方块',
           },
           southRow: {
             en: 'South Blue',
+            cn: '第3个蓝方块',
           },
           leanNorth: {
             en: 'Lean North',
+            cn: '靠上(北)',
           },
           leanEast: {
             en: 'Lean East',
+            cn: '靠右(东)',
           },
           leanSouth: {
             en: 'Lean South',
+            cn: '靠下(南)',
           },
           leanWest: {
             en: 'Lean West',
+            cn: '靠左(西)',
           },
         };
 
@@ -2754,12 +2835,15 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         baitAlphaDebuff: {
           en: 'Avoid Shapes => Bait Proteans (Alpha)',
+          cn: '远离方块 => 引导射线 (α)',
         },
         baitBetaDebuff: {
           en: 'Avoid Shapes => Bait Proteans (Beta)',
+          cn: '远离方块 => 引导射线 (β)',
         },
         default: {
           en: 'Bait Proteans',
+          cn: '引导射线',
         },
       },
     },
@@ -2778,12 +2862,15 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         baitAlphaDebuff: {
           en: 'Bait Proteans (Alpha)',
+          cn: '引导射线 (α)',
         },
         baitBetaDebuff: {
           en: 'Bait Proteans (Beta)',
+          cn: '引导射线 (β)',
         },
         default: {
           en: 'Bait Proteans',
+          cn: '引导射线',
         },
       },
     },
@@ -2800,6 +2887,7 @@ const triggerSet: TriggerSet<Data> = {
       outputStrings: {
         moveAvoid: {
           en: 'Move! (avoid shapes)',
+          cn: '快躲开! (远离方块)',
         },
         move: Outputs.moveAway,
       },
@@ -2808,7 +2896,7 @@ const triggerSet: TriggerSet<Data> = {
       id: 'P12S Pangenesis Collect',
       type: 'GainsEffect',
       netRegex: { effectId: pangenesisEffectIds },
-      condition: (data) => !data.pangenesisDebuffsCalled && !data.isDoorBoss,
+      condition: (data) => !data.pangenesisDebuffsCalled && data.phase === 'pangenesis',
       run: (data, matches) => {
         const id = matches.effectId;
         if (id === pangenesisEffects.darkTilt) {
@@ -2836,13 +2924,22 @@ const triggerSet: TriggerSet<Data> = {
       delaySeconds: 0.5,
       durationSeconds: (data) => {
         // There's ~13 seconds until the first tower and ~18 until the second tower.
-        // Some strats have 'not' take the first tower or the second tower,
-        // so to avoid noisy alerts only extend duration for the long tilts.
+        // Based on the strat chosen in the triggerset config, to avoid noisy alerts,
+        // only extend duration for the long tilts and other players not taking the first towers.
         const myRole = data.pangenesisRole[data.me];
-        return myRole === 'longDark' || myRole === 'longLight' ? 17 : 12;
+        if (myRole === undefined)
+          return;
+        const strat = data.triggerSetConfig.pangenesisFirstTower;
+        const longerDuration = ['longDark', 'longLight'];
+        if (strat === 'one')
+          longerDuration.push('not');
+        else if (strat === 'not')
+          longerDuration.push('one');
+        return longerDuration.includes(myRole) ? 17 : 12;
       },
       suppressSeconds: 999999,
       alertText: (data, _matches, output) => {
+        const strat = data.triggerSetConfig.pangenesisFirstTower;
         const myRole = data.pangenesisRole[data.me];
         if (myRole === undefined)
           return;
@@ -2850,18 +2947,27 @@ const triggerSet: TriggerSet<Data> = {
         if (myRole === 'shortLight')
           return output.shortLight!();
         if (myRole === 'longLight')
-          return output.longLight!();
+          return strat === 'not' ? output.longLightMerge!() : output.longLight!();
         if (myRole === 'shortDark')
           return output.shortDark!();
         if (myRole === 'longDark')
-          return output.longDark!();
+          return strat === 'not' ? output.longDarkMerge!() : output.longDark!();
 
         const myBuddy = Object.keys(data.pangenesisRole).find((x) => {
           return data.pangenesisRole[x] === myRole && x !== data.me;
         });
         const player = myBuddy === undefined ? output.unknown!() : data.ShortName(myBuddy);
-        if (myRole === 'not')
+        if (myRole === 'not') {
+          if (strat === 'not')
+            return output.nothingWithTower!({ player: player, tower: output.firstTower!() });
+          else if (strat === 'one')
+            return output.nothingWithTower!({ player: player, tower: output.secondTower!() });
           return output.nothing!({ player: player });
+        }
+        if (strat === 'not')
+          return output.oneWithTower!({ player: player, tower: output.secondTowerMerge!() });
+        else if (strat === 'one')
+          return output.oneWithTower!({ player: player, tower: output.firstTower!() });
         return output.one!({ player: player });
       },
       run: (data) => data.pangenesisDebuffsCalled = true,
@@ -2872,11 +2978,17 @@ const triggerSet: TriggerSet<Data> = {
           cn: '闲人: 踩第2轮塔 (${player})',
           ko: '디버프 없음 (+ ${player})',
         },
+        nothingWithTower: {
+          en: 'Nothing (w/${player}) - ${tower}',
+        },
         one: {
           en: 'One (w/${player})',
           ja: '因子1: 1番目の塔 (${player})',
           cn: '单因子: 踩第1轮塔 (${player})',
           ko: '1번 (+ ${player})',
+        },
+        oneWithTower: {
+          en: 'One (w/${player}) - ${tower}',
         },
         shortLight: {
           en: 'Short Light (get first dark)',
@@ -2890,6 +3002,9 @@ const triggerSet: TriggerSet<Data> = {
           cn: '白2: 踩第2轮黑塔',
           ko: '긴 빛 (두번째 어둠 대상)',
         },
+        longLightMerge: {
+          en: 'Long Light (get second dark - merge first)',
+        },
         shortDark: {
           en: 'Short Dark (get first light)',
           ja: '早: 1番目のひかり塔',
@@ -2902,6 +3017,18 @@ const triggerSet: TriggerSet<Data> = {
           cn: '黑2: 踩第2轮白塔',
           ko: '긴 어둠 (두번째 빛 대상)',
         },
+        longDarkMerge: {
+          en: 'Long Dark (get second light - merge first)',
+        },
+        firstTower: {
+          en: 'First Tower',
+        },
+        secondTower: {
+          en: 'Second Tower',
+        },
+        secondTowerMerge: {
+          en: 'Second Tower (Merge first)',
+        },
         unknown: Outputs.unknown,
       },
     },
@@ -2909,7 +3036,7 @@ const triggerSet: TriggerSet<Data> = {
       id: 'P12S Pangenesis Tilt Gain',
       type: 'GainsEffect',
       netRegex: { effectId: [pangenesisEffects.lightTilt, pangenesisEffects.darkTilt] },
-      condition: (data, matches) => matches.target === data.me && !data.isDoorBoss,
+      condition: (data, matches) => matches.target === data.me && data.phase === 'pangenesis',
       run: (data, matches) => {
         const color = matches.effectId === pangenesisEffects.lightTilt ? 'light' : 'dark';
         data.pangenesisCurrentColor = color;
@@ -2919,7 +3046,7 @@ const triggerSet: TriggerSet<Data> = {
       id: 'P12S Pangenesis Tilt Lose',
       type: 'LosesEffect',
       netRegex: { effectId: [pangenesisEffects.lightTilt, pangenesisEffects.darkTilt] },
-      condition: (data, matches) => matches.target === data.me && !data.isDoorBoss,
+      condition: (data, matches) => matches.target === data.me && data.phase === 'pangenesis',
       run: (data) => data.pangenesisCurrentColor = undefined,
     },
     {
@@ -2927,7 +3054,7 @@ const triggerSet: TriggerSet<Data> = {
       type: 'Ability',
       // 8343 = Umbral Advent (light tower), 8344 = Astral Advent (dark tower)
       netRegex: { id: ['8343', '8344'] },
-      condition: (data, matches) => matches.target === data.me && !data.isDoorBoss,
+      condition: (data, matches) => matches.target === data.me && data.phase === 'pangenesis',
       run: (data, matches) => {
         const color = matches.id === '8343' ? 'light' : 'dark';
         data.lastPangenesisTowerColor = color;
@@ -2939,7 +3066,7 @@ const triggerSet: TriggerSet<Data> = {
       // 8343 = Umbral Advent (light tower), 8344 = Astral Advent (dark tower)
       // There's always 1-2 of each, so just watch one.
       netRegex: { id: '8343', capture: false },
-      condition: (data) => !data.isDoorBoss,
+      condition: (data) => data.phase === 'pangenesis',
       preRun: (data) => data.pangenesisTowerCount++,
       suppressSeconds: 3,
       alarmText: (data, _matches, output) => {
@@ -2963,7 +3090,7 @@ const triggerSet: TriggerSet<Data> = {
       type: 'GainsEffect',
       netRegex: { effectId: pangenesisEffects.lightTilt, capture: false },
       condition: (data) => {
-        if (data.isDoorBoss)
+        if (data.phase !== 'pangenesis')
           return false;
         return data.lastPangenesisTowerColor !== undefined && data.pangenesisTowerCount !== 3;
       },
@@ -2999,39 +3126,192 @@ const triggerSet: TriggerSet<Data> = {
             ko: '어둠 기둥 (교체)',
           },
         };
-
-        let tower: typeof data.pangenesisCurrentColor;
-        if (data.pangenesisCurrentColor === 'light')
-          tower = 'dark';
-        else if (data.pangenesisCurrentColor === 'dark')
-          tower = 'light';
-        else
-          tower = data.lastPangenesisTowerColor;
-
-        if (tower === undefined)
+        const strat = data.triggerSetConfig.pangenesisFirstTower;
+        const myRole = data.pangenesisRole[data.me];
+        if (myRole === undefined)
           return;
 
-        const isSameTower = tower === data.lastPangenesisTowerColor;
-        if (isSameTower)
-          return { infoText: tower === 'light' ? output.lightTower!() : output.darkTower!() };
+        const switchOutput = data.lastPangenesisTowerColor === 'light'
+          ? 'darkTowerSwitch'
+          : 'lightTowerSwitch';
+        const stayOutput = data.lastPangenesisTowerColor === 'light' ? 'lightTower' : 'darkTower';
 
-        if (tower === 'light')
-          return { alertText: output.lightTowerSwitch!() };
-        return { alertText: output.darkTowerSwitch!() };
+        // 2nd towers
+        if (data.pangenesisTowerCount === 1) {
+          if (strat === 'not') {
+            // in the 0+2 strat, 2nd tower responsibilities are fixed based on 1st tower soaks.
+            // the shortLight, shortDark, and both 'not' players always take the northern (opposite color) towers.
+            // the longLight, longDark, and both 'one' players soak the southern (same color) towers - per their still-active Pangenesis Initial call
+            const swapRoles: PangenesisRole[] = ['not', 'shortLight', 'shortDark'];
+            if (swapRoles.includes(myRole))
+              return { infoText: output[switchOutput]!() }; // infoText because, although a switch, it's 100% anticipated and should be treated as a reminder
+            return;
+          } else if (strat === 'one') {
+            // in the 1+2 strat, 2nd tower responsibilities are flexible based on debuffs applied by the 1st tower
+            // the 'not' players take the northern towers and the longLight and longDark players taken the southern towers
+            // for the 'one' and shortDark/shortLight players, whomever receives a same-color debuff from the first tower goes north (swaps), the other goes south
+            const swapRoles: PangenesisRole[] = ['one', 'shortLight', 'shortDark'];
+            if (data.pangenesisCurrentColor === data.lastPangenesisTowerColor)
+              return { alertText: output[switchOutput]!() };
+            else if (swapRoles.includes(myRole))
+              return { infoText: output[stayOutput]!() };
+          } else if (data.pangenesisCurrentColor === data.lastPangenesisTowerColor)
+            return { alertText: output[switchOutput]!() }; // if no strat, only call a swap for players who must swap or deadge
+          return;
+        }
+
+        // 3rd towers
+        // in both the 0+2 and 1+2 strats, only the players whose debuff is incompatible with the next tower will swap; all others stay
+        if (data.pangenesisCurrentColor === data.lastPangenesisTowerColor)
+          return { alertText: output[switchOutput]!() };
+        if (strat === 'not' || strat === 'one')
+          return { infoText: output[stayOutput]!() };
+      },
+    },
+    {
+      id: 'P12S Summon Darkness Preposition',
+      type: 'StartsUsing',
+      netRegex: { id: '832F', source: 'Pallas Athena', capture: false },
+      condition: (data) => data.seenSecondTethers === false,
+      infoText: (_data, _matches, output) => output.stackForTethers!(),
+      outputStrings: {
+        stackForTethers: {
+          en: 'Stack for Tethers',
+        },
+      },
+    },
+    {
+      id: 'P12S Ultima Ray 1',
+      type: 'StartsUsing',
+      netRegex: { id: '8330', source: 'Hemitheos' },
+      condition: (data) => data.phase === 'gaiaochos1',
+      infoText: (data, matches, output) => {
+        data.darknessClones.push(matches);
+        if (data.darknessClones.length !== 3)
+          return;
+
+        // during 'UAV' phase, the center of the circular arena is [100, 90]
+        const uavCenterX = 100;
+        const uavCenterY = 90;
+
+        const unsafeMap: Partial<Record<DirectionOutput8, DirectionOutput8>> = {
+          dirN: 'dirS',
+          dirNE: 'dirSW',
+          dirE: 'dirW',
+          dirSE: 'dirNW',
+          dirS: 'dirN',
+          dirSW: 'dirNE',
+          dirW: 'dirE',
+          dirNW: 'dirSE',
+        } as const;
+        let safeDirs = Object.keys(unsafeMap);
+        data.darknessClones.forEach((clone) => {
+          const x = parseFloat(clone.x);
+          const y = parseFloat(clone.y);
+          const cloneDir = Directions.xyTo8DirOutput(x, y, uavCenterX, uavCenterY);
+          const pairedDir = unsafeMap[cloneDir];
+          safeDirs = safeDirs.filter((dir) => dir !== cloneDir && dir !== pairedDir);
+        });
+        if (safeDirs.length !== 2)
+          return;
+        const [dir1, dir2] = safeDirs.sort();
+        if (dir1 === undefined || dir2 === undefined)
+          return;
+        return output.combined!({ dir1: output[dir1]!(), dir2: output[dir2]!() });
+      },
+      outputStrings: {
+        combined: {
+          en: '${dir1} / ${dir2} Safe',
+        },
+        ...Directions.outputStrings8Dir,
+      },
+    },
+    {
+      id: 'P12S Ultima Ray 2',
+      type: 'StartsUsing',
+      netRegex: { id: '8330', source: 'Hemitheos' },
+      condition: (data) => data.phase === 'gaiaochos2',
+      infoText: (_data, matches, output) => {
+        // during 'UAV' phase, the center of the circular arena is [100, 90]
+        const uavCenterX = 100;
+        const uavCenterY = 90;
+
+        const safeMap: Record<DirectionOutput8, readonly DirectionOutput8[]> = {
+          // for each dir, identify the two dirs 90 degrees away
+          dirN: ['dirW', 'dirE'],
+          dirNE: ['dirNW', 'dirSE'],
+          dirE: ['dirN', 'dirS'],
+          dirSE: ['dirNE', 'dirSW'],
+          dirS: ['dirW', 'dirE'],
+          dirSW: ['dirNW', 'dirSE'],
+          dirW: ['dirN', 'dirS'],
+          dirNW: ['dirNE', 'dirSW'],
+          unknown: [],
+        } as const;
+
+        const x = parseFloat(matches.x);
+        const y = parseFloat(matches.y);
+        const cloneDir = Directions.xyTo8DirOutput(x, y, uavCenterX, uavCenterY);
+        const [dir1, dir2] = safeMap[cloneDir];
+        if (dir1 === undefined || dir2 === undefined)
+          return;
+        return output.combined!({ dir1: output[dir1]!(), dir2: output[dir2]!() });
+      },
+      outputStrings: {
+        combined: {
+          en: '${dir1} / ${dir2} Safe',
+        },
+        ...Directions.outputStrings8Dir,
+      },
+    },
+    {
+      id: 'P12S Gaiaochos',
+      type: 'StartsUsing',
+      netRegex: { id: '8326', source: 'Pallas Athena', capture: false },
+      response: Responses.bigAoe('alert'),
+    },
+    {
+      id: 'P12S Gaiaochos Tether',
+      type: 'Tether',
+      netRegex: { id: '0009' },
+      condition: (data) => data.phase === 'gaiaochos1' || data.phase === 'gaiaochos2',
+      durationSeconds: (data) => data.phase === 'gaiaochos2' ? 6 : 4,
+      alertText: (data, matches, output) => {
+        if (matches.source !== data.me && matches.target !== data.me)
+          return;
+        const partner = matches.source === data.me ? matches.target : matches.source;
+        if (data.phase === 'gaiaochos1')
+          return output.uav1!({ partner: data.ShortName(partner) });
+        data.seenSecondTethers = true;
+        return output.uav2!({
+          partner: data.ShortName(partner),
+          geocentrism: data.geocentrism2OutputStr ?? output.unknown!(),
+        });
+      },
+      outputStrings: {
+        uav1: {
+          en: 'Break tether (w/ ${partner})',
+          ja: '線切る (${partner})',
+          cn: '拉断连线 (和 ${partner})',
+        },
+        uav2: {
+          en: 'Break tether (w/ ${partner}) => ${geocentrism}',
+        },
+        unknown: Outputs.unknown,
       },
     },
     {
       id: 'P12S Ultima Blow Tether Collect',
       type: 'Tether',
       netRegex: { id: '0001' },
-      condition: (data) => data.phase === 'gaiaochos' && data.gaiaochosCounter === 2,
-      run: (data, matches) => data.gaiochosTetherCollect.push(matches.target),
+      condition: (data) => data.phase === 'gaiaochos2',
+      run: (data, matches) => data.gaiaochosTetherCollect.push(matches.target),
     },
     {
       id: 'P12S Ultima Blow Tether',
       type: 'Tether',
       netRegex: { id: '0001', capture: false },
-      condition: (data) => data.phase === 'gaiaochos' && data.gaiaochosCounter === 2,
+      condition: (data) => data.phase === 'gaiaochos2',
       delaySeconds: 0.5,
       suppressSeconds: 5,
       response: (data, _matches, output) => {
@@ -3040,18 +3320,20 @@ const triggerSet: TriggerSet<Data> = {
           blockPartner: {
             en: 'Block tether',
             ja: '相棒の前でビームを受ける',
+            cn: '挡枪',
           },
           stretchTether: {
             en: 'Stretch tether',
+            cn: '拉线',
           },
         };
 
-        if (data.gaiochosTetherCollect.includes(data.me))
+        if (data.gaiaochosTetherCollect.includes(data.me))
           return { infoText: output.stretchTether!() };
         return { alertText: output.blockPartner!() };
       },
       // If people die, it's not always on the opposite role, so just re-collect.
-      run: (data) => data.gaiochosTetherCollect = [],
+      run: (data) => data.gaiaochosTetherCollect = [],
     },
     {
       id: 'P12S Ultima',
@@ -3090,29 +3372,6 @@ const triggerSet: TriggerSet<Data> = {
       },
     },
     {
-      id: 'P12S Gaiaochos',
-      type: 'StartsUsing',
-      netRegex: { id: '8326', source: 'Pallas Athena', capture: false },
-      response: Responses.bigAoe('alert'),
-    },
-    {
-      id: 'P12S Gaiaochos tether',
-      type: 'Tether',
-      netRegex: { id: '0009' },
-      alertText: (data, matches, output) => {
-        if (matches.source !== data.me && matches.target !== data.me)
-          return;
-        const partner = matches.source === data.me ? matches.target : matches.source;
-        return output.text!({ partner: data.ShortName(partner) });
-      },
-      outputStrings: {
-        text: {
-          en: 'Break tether! (w/ ${partner})',
-          ja: '線切る (${partner})',
-        },
-      },
-    },
-    {
       id: 'P12S Caloric Theory 1 Beacon Collect',
       type: 'HeadMarker',
       netRegex: {},
@@ -3145,6 +3404,7 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Initial Fire (w/ ${partner})',
           ja: '自分に初炎 (${partner})', // FIXME
+          cn: '火标记点名 (和 ${partner})',
         },
       },
     },
@@ -3170,6 +3430,7 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Fire again',
           ja: '再び炎！無職とあたまわり',
+          cn: '二次火标记点名',
         },
       },
     },
@@ -3190,10 +3451,12 @@ const triggerSet: TriggerSet<Data> = {
         none: {
           en: 'Stack with Fire',
           ja: '無職！炎とあたまわり', // FIXME
+          cn: '与火标记分摊',
         },
         wind: {
           en: 'Spread Wind',
           ja: '風！ 散会',
+          cn: '风点名散开',
         },
       },
     },
@@ -3211,14 +3474,17 @@ const triggerSet: TriggerSet<Data> = {
           fire: {
             en: 'Fire (w/${team})',
             ja: '自分に炎 (${team})',
+            cn: '火标记点名 (和 ${team})',
           },
           wind: {
             en: 'Wind (w/${team})',
             ja: '自分に風 (${team})',
+            cn: '风标记点名 (和 ${team})',
           },
           windBeacon: {
             en: 'Initial Wind',
             ja: '自分に初風', // FIXME
+            cn: '风标记点名',
           },
         };
 
@@ -3263,10 +3529,12 @@ const triggerSet: TriggerSet<Data> = {
             // This is meant to be "person without wind who gets an extra stack".
             en: 'Fire Marker',
             ja: '自分に初炎!', // FIXME
+            cn: '火标记点名',
           },
           fireOn: {
             en: 'Fire on ${player}',
             ja: '初炎: ${player}',
+            cn: '火标记点 ${player}',
           },
         };
 
@@ -3293,6 +3561,7 @@ const triggerSet: TriggerSet<Data> = {
         text: {
           en: 'Wind Spread',
           ja: '自分に風、散会',
+          cn: '风点名散开',
         },
       },
     },
@@ -3308,6 +3577,7 @@ const triggerSet: TriggerSet<Data> = {
           passFire: {
             en: 'Pass Fire',
             ja: '次に移る！',
+            cn: '传火!',
           },
           moveAway: Outputs.moveAway,
         };
@@ -3352,7 +3622,7 @@ const triggerSet: TriggerSet<Data> = {
           de: 'Exaflare + Große AoE!', // FIXME
           fr: 'ExaBrasier + Grosse AoE!', // FIXME
           ja: 'エクサフレア + 全体攻撃',
-          cn: '地火 + 大AoE伤害！', // FIXME
+          cn: '地火 + 大AoE伤害!',
           ko: '엑사플레어 + 전체 공격!', // FIXME
         },
       },
