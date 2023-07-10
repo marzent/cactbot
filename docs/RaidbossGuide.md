@@ -713,7 +713,7 @@ Here's a p9s example again, slightly modified.
 Let's say we're trying to translate `Kokytos's Echo`.
 Both of these entries match,
 so there's two orders that these two translations could apply.
-We can replace `Koktytos` and then `Kokytos's Echo` or vice versa.
+We can replace `Kokytos` and then `Kokytos's Echo` or vice versa.
 
 If we apply `Kokytos's Echo` first, then `Kokytos's Echo` becomes `spectre de Cocyte`,
 and then the `Kokytos` translation no longer applies. This is a correct translation.
@@ -724,13 +724,13 @@ You can see here that applying these translations in different orders produces d
 which is why there's a pre-collision test error.
 
 The way to fix this is to use regular expression
-"negative lookahead" `(?!text)` or "negative lookbehind" `(?<text)`
+"negative lookahead" `(?!text)` or "negative lookbehind" `(?<!text)`
 to say that an entry only matches strings that are not preceeded or following
 a particular piece of text.
 See [this link](https://www.regular-expressions.info/lookaround.html) for more details.
 
 In this case, you can change `'Kokytos'` to `'Kokytos(?!\')'`.
-This regex says "match Kokytos, but not if there is a hyphen afterwards".
+This regex says "match Kokytos, but not if there is an apostrophe afterwards".
 By doing this, there is no longer an ordering dependency.
 
 One side note, is that it is possible to have multiple translations apply to the same text without collision.
@@ -791,3 +791,40 @@ the tests will catch that error because it expects that there are no missing tra
 
 It is not an `npm run test` error to have `missingTranslations: true` when it is not needed,
 but this error will show up in the find missing translations script and should be cleaned up if possible.
+
+#### Escaping
+
+Here's a brief aside on escaping special characters, with some examples.
+
+All `replaceSync` and `replaceText` keys are strings that are parsed via `new RegExp(regexString, 'gi')`.
+The awkwardness is that `replaceSync` is used to match both
+syncs inside of a timeline as well as parameters in triggers.
+Unfortunately, timelines are treated as literal text but triggers get one layer of
+parsing applied to them because they are code.
+To say this differently, if you want to match `sync /Pand\u00e6monium/` in a timeline,
+you need to write a regex that matches the string `'Pand\\u00e6monium'`.
+If you want to match `netRegex: { source: 'Pand\u00e6monium' }`,
+you need to write a regex that matches the string `'Pand\u00e6monium'` or
+`'Pandæmonium'` (they are equivalent).
+
+(Sorry, this is somewhat of a not great situation.)
+
+If there is a timeline text such as `Harrowing Hell (cast)`
+and you want to replace the cast part, you will need a `timelineText` entry like `\\(cast\\)`.
+One baskslash is to regex-escape the `(` so it is treated like a literal parenthesis
+and the second backslash is to string-escape the first `\` so it beomces a literal backslash.
+
+A second example, the p10s key `'Pand\\\\u00e6monium'` has four backslashes.
+This is two sets of string-escaped backslashes, `'\\' + '\\'`.
+When parsed through `new RegExp('Pand\\\\u00e6monium')`,
+this becomes a single regex-escaped backslash, `/Pand\\u00e6monium/`.
+In other words, match `Pand` and then a literal backslash with `u00e6` and then `monium`.
+
+A final example is the awkward case `'724P-Operated Superior Flight Unit \\\\\\(A-Lpha\\\\\\)'`.
+`(` is a special regex character and so if we want to match a literal `\(` in text
+we need `\\\\` for the backslash and `\\` to escape the `(` from being treated as regex.
+This becomes the regex `/724P-Operated Superior Flight Unit \\\(A-Lpha\\\)/`.
+
+On the positive side, this only comes up when there are special characters
+that need to be escaped in a string or a regex (e.g. backslash, parens, brackets)
+which are all fairly rare in FFXIV.
