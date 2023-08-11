@@ -92,7 +92,7 @@ const defaultRaidbossNonConfigOptions: RaidbossNonConfigOptions = {
 // TODO: figure out how to get this type from raidboss_config??
 // These values are overwritten and are just here for typing.
 const defaultRaidbossConfigOptions = {
-  DefaultAlertOutput: 'textAndSound',
+  DefaultAlertOutput: 'ttsAndText',
   AlertsLanguage: undefined as (Lang | undefined),
   TimelineLanguage: undefined as (Lang | undefined),
   TimelineEnabled: true,
