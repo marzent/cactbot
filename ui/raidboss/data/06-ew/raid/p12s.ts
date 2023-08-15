@@ -170,9 +170,11 @@ const superchainNpcBaseIds: readonly string[] = Object.values(superchainNpcBaseI
 const whiteFlameDelayOutputStrings = {
   delay1: {
     en: 'now',
+    ko: '바로',
   },
   delay2: {
     en: 'soon',
+    ko: '곧',
   },
   delay3: {
     en: 'delayed',
@@ -317,6 +319,7 @@ export interface Data extends RaidbossData {
   readonly triggerSetConfig: {
     engravement1DropTower: 'quadrant' | 'clockwise' | 'tower';
     classicalConceptsPairOrder: 'xsct' | 'cxts' | 'ctsx' | 'ctxs' | 'shapeAndDebuff';
+    classicalConcepts2ActualNoFlip: true | false;
     pangenesisFirstTower: 'agnostic' | 'not' | 'one';
   };
   decOffset?: number;
@@ -464,6 +467,21 @@ const triggerSet: TriggerSet<Data> = {
         },
       },
       default: 'shapeAndDebuff',
+    },
+    {
+      id: 'classicalConcepts2ActualNoFlip',
+      comment: {
+        en:
+          'Only calls final position immediately in chosen pair order with no flip. For example, for BPOG, the blue X (crosses) will be far west. <a href="https://quisquous.github.io/cactbot/resources/images/06ew_raid_p12s_classic2_noflip.gif" target="_blank">Visual</a>',
+        ko:
+          '선택한 도형 순서에 따른 최종 위치만 알립니다. 예시에서 파보빨초를 기준으로 파랑 X는 1열이 됩니다. <a href="https://quisquous.github.io/cactbot/resources/images/06ew_raid_p12s_classic2_noflip.gif" target="_blank">Visual</a>',
+      },
+      name: {
+        en: 'Classical Concepts 2: Actual only & no inversion',
+        ko: 'Classical Concepts 2: 반전 없이 실제 위치만 알림',
+      },
+      type: 'checkbox',
+      default: false,
     },
     {
       id: 'pangenesisFirstTower',
@@ -1944,7 +1962,7 @@ const triggerSet: TriggerSet<Data> = {
             fr: 'Bait le laser (${delay})', // FIXME
             ja: 'レーザー誘導 (${delay})', // FIXME
             cn: '引导激光 (${delay})', // FIXME
-            ko: '레이저 유도 (${delay})', // FIXME
+            ko: '레이저 유도 (${delay})',
           },
           firstWhiteFlame: {
             en: '(5 and 7 ${delay})',
@@ -1952,7 +1970,7 @@ const triggerSet: TriggerSet<Data> = {
             fr: '(5 et 7 bait ${delay})', // FIXME
             ja: '(5と7誘導 ${delay})', // FIXME
             cn: '(5 和 7 引导 ${delay})', // FIXME
-            ko: '(5, 7 레이저 ${delay})', // FIXME
+            ko: '(5, 7 레이저 ${delay})',
           },
           ...whiteFlameDelayOutputStrings,
         };
@@ -1990,7 +2008,7 @@ const triggerSet: TriggerSet<Data> = {
             fr: 'Bait le laser (${delay})', // FIXME
             ja: 'レーザー誘導 (${delay})', // FIXME
             cn: '引导激光 (${delay})', // FIXME
-            ko: '레이저 유도 (${delay})', // FIXME
+            ko: '레이저 유도 (${delay})',
           },
           secondWhiteFlame: {
             en: '(6 and 8 ${delay})',
@@ -1998,7 +2016,7 @@ const triggerSet: TriggerSet<Data> = {
             fr: '(6 et 8 bait ${delay})', // FIXME
             ja: '(6と8誘導 ${delay})', // FIXME
             cn: '(6 和 8 引导 ${delay})', // FIXME
-            ko: '(6, 8 레이저 ${delay})', // FIXME
+            ko: '(6, 8 레이저 ${delay})',
           },
           thirdWhiteFlame: {
             en: '(1 and 3 ${delay})',
@@ -2006,7 +2024,7 @@ const triggerSet: TriggerSet<Data> = {
             fr: '(1 et 3 bait ${delay})', // FIXME
             ja: '(1と3誘導 ${delay})', // FIXME
             cn: '(1 和 3 引导 ${delay})', // FIXME
-            ko: '(1, 3 레이저 ${delay})', // FIXME
+            ko: '(1, 3 레이저 ${delay})',
           },
           fourthWhiteFlame: {
             en: '(2 and 4 ${delay})',
@@ -2014,7 +2032,7 @@ const triggerSet: TriggerSet<Data> = {
             fr: '(2 et 4 bait ${delay})', // FIXME
             ja: '(2と4誘導 ${delay})', // FIXME
             cn: '(2 和 4 引导 ${delay})', // FIXME
-            ko: '(2, 4 레이저 ${delay})', // FIXME
+            ko: '(2, 4 레이저 ${delay})',
           },
           ...whiteFlameDelayOutputStrings,
         };
@@ -3051,6 +3069,13 @@ const triggerSet: TriggerSet<Data> = {
           if (columnOrder?.length !== 4)
             return;
 
+          // If classicalConcepts2ActualNoFlip is enabled the left/west assigned pair will handle
+          // the left/west column, as opposed to flipping to pre-position in the right/east column before Panta Rhei.
+          // To accommodate this, and because the shapes spawn in their flipped arrangement,
+          // we just reverse the columnOrder from the config settings when determining initial safe spots.
+          if (data.triggerSetConfig.classicalConcepts2ActualNoFlip)
+            columnOrder.reverse();
+
           myColumn = columnOrder.indexOf(data.conceptPair);
           const myColumnLocations = [
             conceptLocationMap.north[myColumn],
@@ -3133,8 +3158,13 @@ const triggerSet: TriggerSet<Data> = {
             data.classical2InitialRow = myRow;
             data.classical2Intercept = myInterceptOutput;
           }
-        } else {
-          // for Panta Rhei, get myColumn, myRow, and myInterceptOutput from data{} and invert them
+        }
+
+        if (
+          (matches.id === '8336') ||
+          (matches.id === '8331' && data.triggerSetConfig.classicalConcepts2ActualNoFlip)
+        ) {
+          // invert myColumn, myRow, and myInterceptOutput to correspond to final/actual positions
           if (data.classical2InitialColumn !== undefined)
             myColumn = 3 - data.classical2InitialColumn;
           if (data.classical2InitialRow !== undefined)
@@ -3167,7 +3197,20 @@ const triggerSet: TriggerSet<Data> = {
           });
           return { alertText: outputStr };
         }
-        if (matches.id === '8331') { // classic2 initial
+        // call the actual position on Panta Rhei or on classical2 cast (depending on classicalConcepts2ActualNoFlip)
+        if (
+          (matches.id === '8336' && !data.triggerSetConfig.classicalConcepts2ActualNoFlip) ||
+          (matches.id === '8331' && data.triggerSetConfig.classicalConcepts2ActualNoFlip)
+        ) {
+          outputStr = output.classic2actual!({
+            column: output[columnOutput]!(),
+            row: output[rowOutput]!(),
+            intercept: output[myInterceptOutput]!(),
+          });
+          return { alertText: outputStr };
+        }
+        // the initial call is not suppressed by classicalConcepts2ActualNoFlip, so call it for classical2
+        if (matches.id === '8331') {
           outputStr = output.classic2initial!({
             column: output[columnOutput]!(),
             row: output[rowOutput]!(),
@@ -3175,12 +3218,8 @@ const triggerSet: TriggerSet<Data> = {
           });
           return { infoText: outputStr };
         }
-        outputStr = output.classic2actual!({
-          column: output[columnOutput]!(),
-          row: output[rowOutput]!(),
-          intercept: output[myInterceptOutput]!(),
-        });
-        return { alertText: outputStr };
+        // only case left is Panta Rhei where initial call was suppressed by classicalConcepts2ActualNoFlip, so don't call anything
+        return;
       },
       run: (data) => {
         if (data.phase === 'classical1') {
