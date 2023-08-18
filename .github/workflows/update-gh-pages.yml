@@ -2,7 +2,7 @@ name: Update gh-pages
 
 on:
   push:
-    branches: [ browser_tts ]
+    branches: [ browser_tts, main ]
 
 jobs:
   check-gh-pages:
