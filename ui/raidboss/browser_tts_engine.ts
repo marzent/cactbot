@@ -18,7 +18,7 @@ class SpeechTTSItem implements TTSItem {
   constructor(text: string, lang?: string, voice?: SpeechSynthesisVoice) {
     this.text = text;
     this.item = new SpeechSynthesisUtterance(text);
-    if (lang)
+    if (lang !== undefined)
       this.item.lang = lang;
     if (voice)
       this.item.voice = voice;
