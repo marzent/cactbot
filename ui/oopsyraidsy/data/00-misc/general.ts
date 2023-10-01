@@ -11,14 +11,14 @@ type MitTracker = {
 };
 
 export interface Data extends OopsyData {
-  lostFood?: { [name: string]: boolean };
-  originalRaiser?: { [targetId: string]: string };
-  lastRaisedLostTime?: { [targetId: string]: string };
-  raiseTargetTracker?: { [sourceId: string]: string };
-  targetMitTracker?: {
+  lostFood: { [name: string]: boolean };
+  originalRaiser: { [targetId: string]: string };
+  lastRaisedLostTime: { [targetId: string]: string };
+  raiseTargetTracker: { [sourceId: string]: string };
+  targetMitTracker: {
     [targetId: string]: MitTracker;
   };
-  partyMitTracker?: MitTracker;
+  partyMitTracker: MitTracker;
 }
 
 const raiseAbilityIds = [
@@ -76,6 +76,16 @@ const shieldEffectIdToAbilityId: { [id: string]: string } = {
 // General mistakes; these apply everywhere.
 const triggerSet: OopsyTriggerSet<Data> = {
   zoneId: ZoneId.MatchAll,
+  initData: () => {
+    return {
+      lostFood: {},
+      originalRaiser: {},
+      lastRaisedLostTime: {},
+      raiseTargetTracker: {},
+      targetMitTracker: {},
+      partyMitTracker: {},
+    };
+  },
   triggers: [
     {
       // Trigger id for internally generated early pull warning.
@@ -93,7 +103,6 @@ const triggerSet: OopsyTriggerSet<Data> = {
         return matches.target === matches.source;
       },
       mistake: (data, matches) => {
-        data.lostFood ??= {};
         // Well Fed buff happens repeatedly when it falls off (WHY),
         // so suppress multiple occurrences.
         if (!data.inCombat || data.lostFood[matches.target])
@@ -119,8 +128,6 @@ const triggerSet: OopsyTriggerSet<Data> = {
       type: 'GainsEffect',
       netRegex: NetRegexes.gainsEffect({ effectId: '30' }),
       run: (data, matches) => {
-        if (!data.lostFood)
-          return;
         delete data.lostFood[matches.target];
       },
     },
@@ -151,7 +158,7 @@ const triggerSet: OopsyTriggerSet<Data> = {
       type: 'LosesEffect',
       netRegex: NetRegexes.losesEffect({ effectId: '94' }),
       run: (data, matches) => {
-        (data.lastRaisedLostTime ??= {})[matches.targetId] = matches.timestamp;
+        data.lastRaisedLostTime[matches.targetId] = matches.timestamp;
       },
     },
     {
@@ -159,8 +166,6 @@ const triggerSet: OopsyTriggerSet<Data> = {
       type: 'GainsEffect',
       netRegex: NetRegexes.gainsEffect({ effectId: '94' }),
       mistake: (data, matches) => {
-        data.lastRaisedLostTime ??= {};
-        data.originalRaiser ??= {};
         const originalRaiser = data.originalRaiser[matches.targetId];
         // 30 and 26 lines having the same timestamp means effect was overwritten and the target is still dead
         const overwrittenRaise = data.lastRaisedLostTime[matches.targetId] === matches.timestamp;
@@ -179,6 +184,7 @@ const triggerSet: OopsyTriggerSet<Data> = {
             text: {
               en: `overwrote ${originalRaiser}'s raise`,
               de: `überschrieb ${originalRaiser}'s Wiederbeleben`,
+              cn: `顶掉了${originalRaiser}的复活`,
               ko: `${originalRaiser}의 부활과 겹침`,
             },
           };
@@ -190,7 +196,7 @@ const triggerSet: OopsyTriggerSet<Data> = {
       type: 'StartsUsing',
       netRegex: NetRegexes.startsUsing({ id: raiseAbilityIds }),
       run: (data, matches) => {
-        (data.raiseTargetTracker ??= {})[matches.sourceId] = matches.targetId;
+        data.raiseTargetTracker[matches.sourceId] = matches.targetId;
       },
     },
     {
@@ -198,9 +204,9 @@ const triggerSet: OopsyTriggerSet<Data> = {
       type: 'Ability',
       netRegex: NetRegexes.ability({ id: raiseAbilityIds, targetId: 'E0000000' }),
       mistake: (data, matches) => {
-        const targetId = (data.raiseTargetTracker ??= {})[matches.sourceId];
+        const targetId = data.raiseTargetTracker[matches.sourceId];
         if (targetId !== undefined) {
-          const originalRaiser = (data.originalRaiser ??= {})[targetId];
+          const originalRaiser = data.originalRaiser[targetId];
           if (originalRaiser !== undefined) {
             return {
               type: 'warn',
@@ -209,6 +215,7 @@ const triggerSet: OopsyTriggerSet<Data> = {
               text: {
                 en: `overwrote ${originalRaiser}'s raise`,
                 de: `überschrieb ${originalRaiser}'s Wiederbeleben`,
+                cn: `顶掉了${originalRaiser}的复活`,
                 ko: `${originalRaiser}의 부활과 겹침`,
               },
             };
@@ -231,8 +238,8 @@ const triggerSet: OopsyTriggerSet<Data> = {
           return;
 
         const mitTracker = isTargetMit
-          ? ((data.targetMitTracker ??= {})[matches.targetId] ??= {})
-          : (data.partyMitTracker ??= {});
+          ? (data.targetMitTracker[matches.targetId] ??= {})
+          : data.partyMitTracker;
         const newTime = new Date(matches.timestamp).getTime();
         const newSource = data.ShortName(matches.source);
         const lastTime = mitTracker[matches.id]?.time;
@@ -257,6 +264,7 @@ const triggerSet: OopsyTriggerSet<Data> = {
               reportId: matches.sourceId,
               text: {
                 en: `overwrote ${lastSource}'s ${matches.ability}`,
+                cn: `顶掉了${lastSource}的${matches.ability}`,
               },
             };
           }
@@ -270,7 +278,7 @@ const triggerSet: OopsyTriggerSet<Data> = {
       run: (data, matches) => {
         const abilityId = shieldEffectIdToAbilityId[matches.effectId];
         if (abilityId !== undefined)
-          delete (data.partyMitTracker ??= {})?.[abilityId];
+          delete data.partyMitTracker[abilityId];
       },
     },
   ],
