@@ -4,6 +4,10 @@ on:
   push:
     branches: [ browser_tts, main ]
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   check-gh-pages:
     runs-on: ubuntu-latest
