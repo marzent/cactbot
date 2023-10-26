@@ -2135,6 +2135,15 @@ const templateOptions: OptionsTemplate = {
       default: true,
     },
     {
+      id: 'ReverseTimeline',
+      name: {
+        en: 'Reverse timeline order (bottom-to-top)',
+        de: 'Umgekehrte Timeline Reihenfolge (unten-nach-oben)',
+      },
+      type: 'checkbox',
+      default: false,
+    },
+    {
       id: 'ShowTimerBarsAtSeconds',
       name: {
         en: 'Timer bar show window (seconds)',
