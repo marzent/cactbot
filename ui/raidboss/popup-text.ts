@@ -260,7 +260,10 @@ class OrderedTriggerList {
   }
 }
 
-const isObject = (x: unknown): x is { [key: string]: unknown } => x instanceof Object;
+const isObject = (x: unknown): x is { [key: string]: unknown } => {
+  // JavaScript considers [] to be an object, so check for that explicitly.
+  return x instanceof Object && !Array.isArray(x);
+};
 
 // User trigger may pass anything as parameters
 type TriggerParams = { [key: string]: unknown };
@@ -355,6 +358,79 @@ class TriggerOutputProxy {
     });
   }
 
+  evaluateOutputParam(
+    id: string,
+    key: string,
+    val: unknown,
+    prop?: string,
+    isNestedArray?: boolean,
+  ): string {
+    if (typeof val === 'string' || typeof val === 'number')
+      return val.toString();
+    if (typeof val !== 'object') {
+      console.error(`Trigger ${id} has non-string param value ${key}.`);
+      return this.unknownValue;
+    }
+
+    if (Array.isArray(val)) {
+      // Don't allow nesting arrays here, e.g. [player1, [player2, player3]].
+      if (isNestedArray) {
+        console.error(`Trigger ${id} passed nested arrays to param value ${key}.`);
+        return this.unknownValue;
+      }
+
+      // If a trigger passes in [player1, player2, player3] as a value,
+      // and a user specifies `${players.job}`, then return:
+      // `${players[0].job}, ${players[1].job}, ${players[2].job}`.
+      // In general, this means that all array elements must either be simple
+      // strings/numbers or all share the same prop, or there will be errors below
+      // about non-existent properties. In practice, this likely will never happen.
+      //
+      // Also, this assumes that all locales are ok with ", " as a separator.
+      // This seems to be true in practice.
+      return val.map((p) => this.evaluateOutputParam(id, key, p, prop, true)).join(', ');
+    }
+
+    // Appease TypeScript, this shouldn't happen.
+    if (!isObject(val))
+      return this.unknownValue;
+
+    if (prop !== undefined) {
+      const retVal = val[prop];
+      if (typeof retVal === 'string' || typeof retVal === 'number')
+        return retVal.toString();
+
+      if (retVal === undefined || retVal === null) {
+        console.error(
+          `Trigger ${id} is referencing non-existent object property ${key}.${prop}.`,
+        );
+      } else {
+        console.error(
+          `Trigger ${id} is referencing object property ${key}.${prop} with incorrect type ${typeof retVal}.`,
+        );
+      }
+    }
+
+    // At this point, we're going to try to return a default value if we can,
+    // either from an error or because `prop` was unspecified.
+    const toStringFunc = val['toString'];
+    if (typeof toStringFunc !== 'function') {
+      console.error(
+        `Trigger ${id} has non-func ${key}.toString property.`,
+      );
+      return this.unknownValue;
+    }
+
+    const toStringVal: unknown = toStringFunc();
+    if (typeof toStringVal !== 'string' && typeof toStringVal !== 'number') {
+      console.error(
+        `Trigger ${id} returned non-string ${typeof toStringVal} from ${key}.toString().`,
+      );
+      return this.unknownValue;
+    }
+    return toStringVal.toString();
+  }
+
   getReplacement(
     // Can't use optional modifier for this arg since the others aren't optional
     template: { [lang: string]: unknown } | string | undefined,
@@ -382,17 +458,25 @@ class TriggerOutputProxy {
     }
 
     return value.replace(/\${\s*([^}\s]+)\s*}/g, (_fullMatch: string, key: string) => {
-      if (params !== undefined && key in params) {
-        const str = params[key];
-        switch (typeof str) {
-          case 'string':
-            return str;
-          case 'number':
-            return str.toString();
+      if (params !== undefined) {
+        let prop: string | undefined = undefined;
+
+        if (!(key in params) && key.includes('.')) {
+          const parts = key.split('.');
+          // Only a warning here (for user triggers), but mocha tests will error out for this case
+          // If the user specifies extra parts, just ignore them
+          if (parts.length > 2)
+            console.warn(`Trigger ${id} has extra path parts for object parameter ${key}.`);
+          key = parts[0] ?? '';
+          prop = parts[1];
         }
-        console.error(`Trigger ${id} has non-string param value ${key}.`);
-        return this.unknownValue;
+
+        if (key in params) {
+          const val = params[key];
+          return this.evaluateOutputParam(id, key, val, prop);
+        }
       }
+
       console.error(`Trigger ${id} can't replace ${key} in ${JSON.stringify(template)}.`);
       return this.unknownValue;
     });
@@ -482,7 +566,7 @@ export class PopupText {
   protected displayLang: Lang;
   protected ttsEngine?: BrowserTTSEngine;
   protected ttsSay: (text: string) => void;
-  protected partyTracker = new PartyTracker();
+  protected partyTracker: PartyTracker;
   protected readonly kMaxRowsOfText = 2;
   protected data: RaidbossData;
   protected me = '';
@@ -504,6 +588,7 @@ export class PopupText {
     protected raidbossDataFiles: RaidbossFileData,
   ) {
     this.options = options;
+    this.partyTracker = new PartyTracker(options);
     this.timelineLoader = timelineLoader;
     this.ProcessDataFiles(raidbossDataFiles);
 
@@ -956,21 +1041,7 @@ export class PopupText {
   }
 
   ShortNamify(name?: string): string {
-    // TODO: make this unique among the party in case of first name collisions.
-    // TODO: probably this should be a general cactbot utility.
-    if (typeof name !== 'string') {
-      if (typeof name !== 'undefined')
-        console.error('called ShortNamify with non-string');
-      return '???';
-    }
-
-    const nick = this.options.PlayerNicks[name];
-
-    if (nick !== undefined)
-      return nick;
-
-    const idx = name.indexOf(' ');
-    return idx < 0 ? name : name.slice(0, idx);
+    return Util.shortName(name, this.options.PlayerNicks);
   }
 
   Reset(): void {
@@ -1600,7 +1671,7 @@ export class PopupText {
       options: this.options,
       inCombat: this.inCombat,
       triggerSetConfig: this.triggerSetConfig,
-      ShortName: this.ShortNamify.bind(this),
+      ShortName: (name?: string) => Util.shortName(name, this.options.PlayerNicks),
       StopCombat: () => this.SetInCombat(false),
       ParseLocaleFloat: parseFloat,
       CanStun: () => Util.canStun(this.job),
