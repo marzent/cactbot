@@ -553,7 +553,8 @@ const isWipe = (line: string): boolean => {
 export class PopupText {
   protected triggers: ProcessedTrigger[] = [];
   protected netTriggers: ProcessedTrigger[] = [];
-  protected timers: { [triggerId: number]: boolean } = {};
+  // A map of trigger id to setTimeout handle.
+  protected timers: { [triggerId: number]: number } = {};
   protected triggerSuppress: { [triggerId: string]: number } = {};
   protected currentTriggerID = 0;
   protected inCombat = false;
@@ -1040,10 +1041,6 @@ export class PopupText {
       this.Reset();
   }
 
-  ShortNamify(name?: string): string {
-    return Util.shortName(name, this.options.PlayerNicks);
-  }
-
   Reset(): void {
     Util.clearWatchCombatants();
     this.data = this.getDataObject();
@@ -1052,6 +1049,8 @@ export class PopupText {
   }
 
   StopTimers(): void {
+    for (const handle of Object.values(this.timers))
+      window.clearTimeout(handle);
     this.timers = {};
   }
 
@@ -1338,9 +1337,8 @@ export class PopupText {
       return;
 
     const triggerID = this.currentTriggerID++;
-    this.timers[triggerID] = true;
     return new Promise((res, rej) => {
-      window.setTimeout(() => {
+      this.timers[triggerID] = window.setTimeout(() => {
         if (this.timers[triggerID])
           res();
         else
