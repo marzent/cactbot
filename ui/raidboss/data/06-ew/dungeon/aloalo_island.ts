@@ -35,6 +35,13 @@ const triggerSet: TriggerSet<Data> = {
     };
   },
   triggers: [
+    // ----------------------------------------- Trash
+    {
+      id: 'Aloalo Ahool Soundwave',
+      type: 'StartsUsing',
+      netRegex: { id: '8869', source: 'Aloalo Ahool', capture: false },
+      response: Responses.aoe(),
+    },
     // ----------------------------------------- Quaqua
     {
       id: 'Aloalo Quaqua Made Magic',
@@ -99,15 +106,26 @@ const triggerSet: TriggerSet<Data> = {
       },
     },
     {
-      id: 'Aloalo Quaqua Arcane Armaments Trident',
+      id: 'Aloalo Quaqua Arcane Armaments Water Spear',
       type: 'StartsUsing',
       netRegex: { id: '8B9F', source: 'Quaqua', capture: false },
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
-          en: 'Outside between tridents',
+          en: 'Away from spears',
           de: 'Außen zwichen den Dreizack',
           ja: '槍の間の外側へ',
+        },
+      },
+    },
+    {
+      id: 'Aloalo Quaqua Arcane Armaments Poison Spear',
+      type: 'StartsUsing',
+      netRegex: { id: '8BA3', source: 'Quaqua', capture: false },
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: {
+          en: 'Avoid spreading spear puddles',
         },
       },
     },
@@ -289,8 +307,8 @@ const triggerSet: TriggerSet<Data> = {
           de: 'Geh in den sicheren Bereich',
           ja: '安置へ移動',
         },
-        front: Outputs.goFront,
-        back: Outputs.getBehind,
+        front: Outputs.front,
+        back: Outputs.back,
         left: Outputs.left,
         right: Outputs.right,
       },
@@ -315,10 +333,10 @@ const triggerSet: TriggerSet<Data> = {
           'E91': 'left',
         }[matches.effectId];
         if (map === undefined)
-          return output.text!();
+          return;
         if (data.lalaRotate === undefined)
           return output[map]!();
-        if (data.lalaRotate === 'cw')
+        if (data.lalaRotate === 'ccw')
           return {
             'front': output.left!(),
             'back': output.right!(),
@@ -334,29 +352,17 @@ const triggerSet: TriggerSet<Data> = {
       },
       run: (data) => delete data.lalaRotate,
       outputStrings: {
-        front: Outputs.lookTowardsBoss,
+        front: {
+          en: 'Face Towards Lala',
+        },
         back: {
-          en: 'Look behind',
-          de: 'Schau nach Hinten',
-          ja: '後ろ見て',
+          en: 'Look Away from Lala',
         },
         left: {
-          en: 'Look right',
-          de: 'Schau nach Rechts',
-          ja: '右見て',
+          en: 'Left Flank towards Lala',
         },
         right: {
-          en: 'Look left',
-          de: 'Schau nach Links',
-          ja: '左見て',
-        },
-        text: {
-          en: 'Point opening at Boss',
-          de: 'Zeige Öffnung zum Boss',
-          fr: 'Pointez l\'ouverture vers Boss', // FIXME
-          ja: '未解析の方角をボスに向ける',
-          cn: '脚下光环缺口对准boss',
-          ko: '문양이 빈 쪽을 보스쪽으로 향하게 하기', // FIXME
+          en: 'Right Flank towards Lala',
         },
       },
     },
@@ -380,7 +386,7 @@ const triggerSet: TriggerSet<Data> = {
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
-          en: 'Bat adds => Big AOEs',
+          en: 'Armadillo adds => Big AOEs',
           de: 'Fledermaus Adds => Große AoEs',
           ja: 'コウモリ => ゆかAOE',
         },
@@ -408,7 +414,7 @@ const triggerSet: TriggerSet<Data> = {
     {
       id: 'Aloalo Lala Calculated Trajectory',
       type: 'GainsEffect',
-      netRegex: { effectId: 'E8[3-6]' },
+      netRegex: { effectId: ['E83', 'E84', 'E85', 'E86'] },
       condition: Conditions.targetIsYou(),
       delaySeconds: 3,
       durationSeconds: 7,
@@ -420,7 +426,7 @@ const triggerSet: TriggerSet<Data> = {
           'E86': 'right',
         }[matches.effectId];
         if (map === undefined)
-          return output.text!();
+          return;
         if (data.lalaRotate === undefined)
           return output[map]!();
         if (data.lalaRotate === 'cw') {
@@ -440,45 +446,37 @@ const triggerSet: TriggerSet<Data> = {
       },
       run: (data) => delete data.lalaRotate,
       outputStrings: {
-        text: {
-          en: 'Mindhack',
-          de: 'Geistlenkung',
-          fr: 'Piratage mental', // FIXME
-          ja: '強制移動',
-          cn: '强制移动', // FIXME
-          ko: '강제이동', // FIXME
-        },
         front: {
-          en: 'Mindhack: Forward',
-          de: 'Geistlenkung: Vorwärts',
-          fr: 'Piratage mental : Vers l\'avant',
-          ja: '強制移動 : 前',
-          cn: '强制移动 : 前',
-          ko: '강제이동: 앞',
+          en: 'Forward March (1 square)',
+          de: 'Geistlenkung: Vorwärts', // FIXME
+          fr: 'Piratage mental : Vers l\'avant', // FIXME
+          ja: '強制移動 : 前', // FIXME
+          cn: '强制移动 : 前', // FIXME
+          ko: '강제이동: 앞', // FIXME
         },
         back: {
-          en: 'Mindhack: Back',
-          de: 'Geistlenkung: Rückwärts',
-          fr: 'Piratage mental : Vers l\'arrière',
-          ja: '強制移動 : 後ろ',
-          cn: '强制移动 : 后',
-          ko: '강제이동: 뒤',
+          en: 'Backwards March (1 square)',
+          de: 'Geistlenkung: Rückwärts', // FIXME
+          fr: 'Piratage mental : Vers l\'arrière', // FIXME
+          ja: '強制移動 : 後ろ', // FIXME
+          cn: '强制移动 : 后', // FIXME
+          ko: '강제이동: 뒤', // FIXME
         },
         left: {
-          en: 'Mindhack: Left',
-          de: 'Geistlenkung: Links',
-          fr: 'Piratage mental : Vers la gauche',
-          ja: '強制移動 : 左',
-          cn: '强制移动 : 左',
-          ko: '강제이동: 왼쪽',
+          en: 'Left March (1 square)',
+          de: 'Geistlenkung: Links', // FIXME
+          fr: 'Piratage mental : Vers la gauche', // FIXME
+          ja: '強制移動 : 左', // FIXME
+          cn: '强制移动 : 左', // FIXME
+          ko: '강제이동: 왼쪽', // FIXME
         },
         right: {
-          en: 'Mindhack: Right',
-          de: 'Geistlenkung: Rechts',
-          fr: 'Piratage mental : Vers la droite',
-          ja: '強制移動 : 右',
-          cn: '强制移动 : 右',
-          ko: '강제이동: 오른쪽',
+          en: 'Right March (1 square)',
+          de: 'Geistlenkung: Rechts', // FIXME
+          fr: 'Piratage mental : Vers la droite', // FIXME
+          ja: '強制移動 : 右', // FIXME
+          cn: '强制移动 : 右', // FIXME
+          ko: '강제이동: 오른쪽', // FIXME
         },
       },
     },
@@ -487,34 +485,7 @@ const triggerSet: TriggerSet<Data> = {
       id: 'Aloalo Statice Pop',
       type: 'StartsUsing',
       netRegex: { id: '892F', source: 'Statice', capture: false },
-      delaySeconds: 3,
       response: Responses.knockback(),
-    },
-    {
-      id: 'Aloalo Statice 4-tonze Weight',
-      type: 'StartsUsing',
-      netRegex: { id: '8931', source: 'Statice', capture: false },
-      infoText: (_data, _matches, output) => output.text!(),
-      outputStrings: {
-        text: {
-          en: 'Avoid 4-tons',
-          de: 'Weiche 4-Tonnen aus',
-          ja: '4トン回避',
-        },
-      },
-    },
-    {
-      id: 'Aloalo Statice Pinwheel',
-      type: 'StartsUsing',
-      netRegex: { id: '8933', source: 'Statice', capture: false },
-      infoText: (_data, _matches, output) => output.text!(),
-      outputStrings: {
-        text: {
-          en: 'Avoid fire lines',
-          de: 'Weiche Feuer-Linien aus',
-          ja: 'ぐるぐる火を回避',
-        },
-      },
     },
     {
       id: 'Aloalo Statice Trick Reload',
@@ -545,8 +516,7 @@ const triggerSet: TriggerSet<Data> = {
       type: 'StartsUsing',
       netRegex: { id: '892B', source: 'Statice', capture: false },
       infoText: (data, _matches, output) => {
-        const safe = data.reloadFailed.join(', ');
-        return output.text!({ safe: safe });
+        return output.text!({ safe: data.reloadFailed });
       },
       outputStrings: {
         text: {
@@ -560,54 +530,43 @@ const triggerSet: TriggerSet<Data> = {
       id: 'Aloalo Statice Aero IV',
       type: 'StartsUsing',
       netRegex: { id: '8929', source: 'Statice', capture: false },
-      response: Responses.aoe('alert'),
+      response: Responses.aoe(),
+    },
+    {
+      id: 'Aloalo Statice Shocking Abandon',
+      type: 'StartsUsing',
+      netRegex: { id: '8928', source: 'Statice' },
+      response: Responses.tankBuster(),
+    },
+    {
+      id: 'Aloalo Statice Fair Flight',
+      type: 'StartsUsing',
+      netRegex: { id: '8946', source: 'Statice', capture: false },
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: {
+          en: 'Stand on cushion',
+        },
+      },
     },
     // ----------------------------------------- Loquloqui
     {
       id: 'Aloalo Loquloqui Long-lost Light',
       type: 'StartsUsing',
       netRegex: { id: '87BC', source: 'Loquloqui', capture: false },
-      response: Responses.aoe('alert'),
+      response: Responses.aoe(),
     },
     {
       id: 'Aloalo Loquloqui O Life, Flourish',
       type: 'StartsUsing',
-      netRegex: { id: '893C', source: 'Loquloqui', capture: false },
+      netRegex: { id: '87C4', source: 'Loquloqui', capture: false },
       durationSeconds: 10,
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
-          en: 'Avoid shimmering adds', // FIXME (twinkling or blinking?)
+          en: 'Glowing adds get larger',
           de: 'Weiche leuchtenden Adds aus',
           ja: '光ってる物に注意',
-        },
-      },
-    },
-    {
-      id: 'Aloalo Uolosapa Loqua Rush',
-      type: 'StartsUsing',
-      netRegex: { id: ['87C0', '87C1'], source: 'Uolosapa Loqua', capture: false },
-      suppressSeconds: 5,
-      infoText: (_data, _matches, output) => output.text!(),
-      outputStrings: {
-        text: {
-          en: 'Birds charge',
-          de: 'Vogel ansturm',
-          ja: '鳥の突進',
-        },
-      },
-    },
-    {
-      id: 'Aloalo Repuruba Loqua Turnabout',
-      type: 'StartsUsing',
-      netRegex: { id: ['87C2', '87C3'], source: 'Repuruba Loqua', capture: false },
-      suppressSeconds: 5,
-      infoText: (_data, _matches, output) => output.text!(),
-      outputStrings: {
-        text: {
-          en: 'Avoid AOEs',
-          de: 'Weiche AoEs aus',
-          ja: 'AOE回避',
         },
       },
     },
@@ -625,7 +584,7 @@ const triggerSet: TriggerSet<Data> = {
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
-          en: 'Avoid tethers', // FIXME (tethers going to start to shrink)
+          en: 'Away from tether ends',
           de: 'Weiche Verbindungen aus',
           ja: '縮む線を回避',
         },
@@ -645,7 +604,7 @@ const triggerSet: TriggerSet<Data> = {
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
-          en: 'Last bloom => Go to safe',
+          en: 'Last bloom => Walk into Safe',
           de: 'Letzte Blüte => Geh zum sicheren Bereich',
           ja: '最後の花畑 => 安置へ移動',
         },
@@ -656,14 +615,7 @@ const triggerSet: TriggerSet<Data> = {
       type: 'StartsUsing',
       netRegex: { id: '87CA', source: 'Loquloqui', capture: false },
       durationSeconds: 4.5,
-      alertText: (_data, _matches, output) => output.text!(),
-      outputStrings: {
-        text: {
-          en: 'Crush! Go to corner',
-          de: 'Crush! Geh in eine Ecke',
-          ja: 'クラッシュ！隅へ移動',
-        },
-      },
+      response: Responses.getOut(),
     },
     {
       id: 'Aloalo Loquloqui Stirring of Spirits',
@@ -673,9 +625,9 @@ const triggerSet: TriggerSet<Data> = {
       alertText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
-          en: '4x Knockback',
-          de: '4x Rückstoß',
-          ja: '4x ノックバック',
+          en: '5x Knockback',
+          de: '5x Rückstoß',
+          ja: '5x ノックバック',
         },
       },
     },
@@ -686,6 +638,7 @@ const triggerSet: TriggerSet<Data> = {
       replaceText: {
         'Receding Twintides/Encroaching Twintides': 'Receding/Encroaching Twintides',
         'Far Tide/Near Tide': 'Far/Near Tide',
+        'Meteor/Sledgemagic/Hunks of Junk/Happy Surprise': '--dartboard result--',
       },
     },
     {
