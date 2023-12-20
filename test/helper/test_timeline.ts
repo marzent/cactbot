@@ -3,6 +3,7 @@ import path from 'path';
 
 import { assert } from 'chai';
 
+import { keysThatRequireTranslation } from '../../resources/netregexes';
 import Regexes from '../../resources/regexes';
 import { translateWithReplacements } from '../../resources/translations';
 import { LooseTriggerSet } from '../../types/trigger';
@@ -75,10 +76,30 @@ const getTestCases = (
   for (const [key, replaceText] of Object.entries(trans.replaceText ?? {}))
     textMap.set(Regexes.parse(key), replaceText);
 
+  // Add all original regexes to the set of things to do replacement on
+  // and add all translatable parameters as well.
+  const syncStrings: Set<string> = new Set<string>();
+  for (const sync of timeline.syncStarts) {
+    if (typeof sync.origInput === 'string') {
+      syncStrings.add(sync.origInput);
+      continue;
+    }
+    for (const [key, value] of Object.entries(sync.origInput)) {
+      if (!keysThatRequireTranslation.includes(key))
+        continue;
+      if (typeof value === 'object') {
+        for (const innerValue of value)
+          syncStrings.add(innerValue);
+      } else {
+        syncStrings.add(value);
+      }
+    }
+  }
+
   const testCases: TestCase[] = [
     {
       type: 'replaceSync',
-      items: new Set(timeline.syncStarts.map((x) => x.regex.source)),
+      items: syncStrings,
       replace: new Map(syncMap),
       replaceWithoutCommon: new Map(syncMap),
     },
@@ -148,6 +169,13 @@ const testTimelineFiles = (timelineFiles: string[]): void => {
               assert.isNull(e, `${timelineFile}:${e.lineNumber}:${e.error}:${e.line}`);
             else
               assert.isNull(e, `${timelineFile}:${e.error}`);
+          }
+        });
+        it('should use netregex parameter style', () => {
+          // Incorrect: 8.0 "Crackle Hiss" sync / 1[56]:[^:]*:Imdugud:B55:/
+          //   Correct: 8.0 "Crackle Hiss" Ability { id: "B55", source: "Imdugud" }
+          for (const sync of timeline.syncStarts) {
+            assert.strictEqual(sync.regexType, 'net');
           }
         });
         it('should not have translation conflicts', () => {
@@ -308,22 +336,6 @@ const testTimelineFiles = (timelineFiles: string[]): void => {
                   );
                 }
               }
-            }
-          }
-        });
-        it('should have proper sealed sync', () => {
-          for (const sync of timeline.syncStarts) {
-            const regex = sync.regex.source;
-            if (regex.includes('is no longer sealed')) {
-              assert.isArray(
-                /00:0839::\.\*is no longer sealed/.exec(regex),
-                `${timelineFile}:${sync.lineNumber} 'is no longer sealed' sync must be exactly '00:0839::.*is no longer sealed'`,
-              );
-            } else if (regex.includes('will be sealed')) {
-              assert.isArray(
-                /00:0839::.*will be sealed/.exec(regex),
-                `${timelineFile}:${sync.lineNumber} 'will be sealed' sync must be preceded by '00:0839::'`,
-              );
             }
           }
         });
